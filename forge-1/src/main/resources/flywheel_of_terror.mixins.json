@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "minVersion": "0.8.5",
+  "package": "com.example.flywheel_of_terror.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "wrong_die",
+    "less_trees",
+    "scarecrow",
+    "scarecrow2"
+  ],
+  "client": [
+    "fake_invent"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -14,19 +14,33 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
       debug strings (`flywheel_of_terror`, `game_rules`), stray `System.out.println` event logs.
 
 ## Phase 1 — Foundation: remap, build & dedicated-server safety
-- [ ] Remap SRG decompile → official Mojang mappings; create a buildable Forge 1.20.1 MDK workspace.
-- [ ] Confirm `gradlew build` produces a JAR and `runServer` starts.
-- [ ] Move all common-bus `net.minecraft.client.*` access off the server path:
-  - [ ] `game_rules.every` (calls `Minecraft` unconditionally in `PlayerTickEvent`).
-  - [ ] `all_look_at_you.every` (calls `Minecraft`/`Camera` unconditionally).
-  - [ ] `information.return_to_normal` (`PlayerLoggedInEvent` calls `Minecraft`).
-  - [ ] `independence.tick_move_player_to_living_entity` (called from server tick).
-  - [ ] `paranoia.do_a_call` / `paranoia.view` (called from server-side `terror_beginning`).
-  - [ ] `he_is_here_event.do_event` (called from server-side `paranoia`).
-  - [ ] `fake_darknet_access.do_event` (called from server-side `LivingDeathEvent`).
-- [ ] Audit mixins for server safety: `scarecrow` (`@Overwrite Entity#tick`),
-      `less_trees` (`@Overwrite TreeFeature`), `fake_invent` (`InventoryScreen`, global `show_model`).
+- [x] Remap SRG decompile → official Mojang mappings; create a buildable Forge 1.20.1 MDK workspace.
+      (3799 m_/f_ tokens remapped via a SRG→official table joined from the ForgeGradle cache
+      `mcp_mappings.tsrg` × Mojang `client/server_mappings.txt`; 0 unmapped. Source lives in
+      `forge-1/src/main/java/com/example/flywheel_of_terror/`.)
+- [x] Confirm `gradlew build` produces a JAR. → `forge-1/build/libs/flywheel_of_terror-1.0.1.jar`.
+      (`runServer` smoke-boot not yet run — see the dedicated-server checkbox below.)
+- [x] Move all common-bus `net.minecraft.client.*` access off the server path: extracted into
+      `client/client_safe.java` (`@OnlyIn(Dist.CLIENT)`), invoked via
+      `DistExecutor.unsafeRunWhenOn(Dist.CLIENT, …)` so the server never loads `Minecraft`.
+  - [x] `game_rules.every` (calls `Minecraft` unconditionally in `PlayerTickEvent`).
+  - [x] `all_look_at_you.every` (calls `Minecraft`/`Camera` unconditionally).
+  - [x] `information.return_to_normal` (`PlayerLoggedInEvent` calls `Minecraft`).
+  - [x] `independence.tick_move_player_to_living_entity` (called from server tick).
+  - [x] `paranoia.do_a_call` (called from server-side `terror_beginning`). `paranoia.view` left in place
+        — it is a `RenderGuiEvent.Post` (client-bus) handler, not a server-invoked path.
+  - [x] `he_is_here_event.do_event` (called from server-side `paranoia`).
+  - [x] `fake_darknet_access.do_event` (called from server-side `LivingDeathEvent`).
+- [~] Audit mixins for server safety: kept + remapped, registered in `flywheel_of_terror.mixins.json`
+      (manifest `MixinConfigs`). `@Overwrite` `this`→target casts fixed (`(Entity)(Object)this`).
+      `scarecrow` (`@Overwrite Entity#tick`), `less_trees` (`@Overwrite TreeFeature`), `fake_invent`
+      (`InventoryScreen`, global `show_model`) still need the runtime-safety decision (Phase 2/3).
 - [ ] Dedicated server boots and a client can connect (no `NoClassDefFoundError`).
+      NOTE: still-blocking — several common `@EventBusSubscriber` classes (`paranoia`, `information`,
+      `eye_intervention`, `oh_no_between_screens`, `family`, `deep_terror`, the `fake_*` menus, …)
+      subscribe client-only Forge events (`RenderGuiEvent`/`ScreenEvent`) and/or import
+      `net.minecraft.client.*`; their auto-registration loads client classes on a dedicated server.
+      Move these handlers to `@EventBusSubscriber(Dist.CLIENT)` / client-only classes before boot.
 
 ## Phase 2 — De-globalize per-player state
 - [ ] Build the full inventory of `public static` per-player fields (~120+; see CLAUDE.md §2.2/§2.3).

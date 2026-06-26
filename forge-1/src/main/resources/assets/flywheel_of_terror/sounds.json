@@ -1,0 +1,263 @@
+{
+  "angel_sound": {
+    "sounds": [
+      "flywheel_of_terror:angel_sound"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.angel_sound"
+  },
+  "paralysis": {
+    "sounds": [
+      "flywheel_of_terror:paralysis"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.paralysis"
+  },
+  "crowd_madness": {
+    "sounds": [
+      "flywheel_of_terror:crowd_madness"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.crowd_madness"
+  },
+  "error": {
+    "sounds": [
+      "flywheel_of_terror:error"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.error"
+  },
+  "heart_attack": {
+    "sounds": [
+      "flywheel_of_terror:heart_attack"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.heart_attack"
+  },
+  "knife_attack": {
+    "sounds": [
+      "flywheel_of_terror:knife_attack"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.knife_attack"
+  },
+  "christ_spawn": {
+    "sounds": [
+      "flywheel_of_terror:christ_spawn"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.christ_spawn"
+  },
+  "break_christ": {
+    "sounds": [
+      "flywheel_of_terror:break_christ"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.break_christ"
+  },
+  "below1": {
+    "sounds": [
+      "flywheel_of_terror:below1"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.below1"
+  },
+  "below2": {
+    "sounds": [
+      "flywheel_of_terror:below2"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.below2"
+  },
+  "disappear": {
+    "sounds": [
+      "flywheel_of_terror:disappear"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.disappear"
+  },
+  "break_mob": {
+    "sounds": [
+      "flywheel_of_terror:break_mob"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.break_mob"
+  },
+  "leave_the_house": {
+    "sounds": [
+      "flywheel_of_terror:leave_the_house"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.leave_the_house"
+  }, "break_house": {
+  "sounds": [
+    "flywheel_of_terror:break_house"
+  ],
+  "subtitle": "subtitles.flywheel_of_terror.break_house"
+},
+  "spawn": {
+    "sounds": [
+      "flywheel_of_terror:spawn"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.spawn"
+  },
+  "dead": {
+    "sounds": [
+      "flywheel_of_terror:dead"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.dead"
+  },
+    "breath1": {
+      "sounds": [
+        "flywheel_of_terror:breath1"
+      ],
+      "subtitle": "subtitles.flywheel_of_terror.breath1"
+  },
+  "steps1": {
+    "sounds": [
+      "flywheel_of_terror:steps1"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.steps1"
+  },
+  "force_open": {
+    "sounds": [
+      "flywheel_of_terror:force_open"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.force_open"
+  },
+  "atmosphere1": {
+    "sounds": [
+      "flywheel_of_terror:atmosphere1"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.atmosphere1"
+  },
+  "headless_spawn": {
+    "sounds": [
+      "flywheel_of_terror:headless_spawn"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.headless_spawn"
+  },
+  "atmosphere2": {
+    "sounds": [
+      "flywheel_of_terror:atmosphere2"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.atmosphere2"
+  },
+  "atmosphere3": {
+    "sounds": [
+      "flywheel_of_terror:atmosphere3"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.atmosphere3"
+  },
+  "atmosphere4": {
+    "sounds": [
+      "flywheel_of_terror:atmosphere4"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.atmosphere4"
+  }, "atmosphere5": {
+  "sounds": [
+    "flywheel_of_terror:atmosphere5"
+  ],
+  "subtitle": "subtitles.flywheel_of_terror.atmosphere5"
+}, "atmosphere6": {
+  "sounds": [
+    "flywheel_of_terror:atmosphere6"
+  ],
+  "subtitle": "subtitles.flywheel_of_terror.atmosphere6"
+}, "atmosphere7": {
+  "sounds": [
+    "flywheel_of_terror:atmosphere7"
+  ],
+  "subtitle": "subtitles.flywheel_of_terror.atmosphere7"
+}, "atmosphere8": {
+  "sounds": [
+    "flywheel_of_terror:atmosphere8"
+  ],
+  "subtitle": "subtitles.flywheel_of_terror.atmosphere8"
+},
+  "labyr": {
+    "sounds": [
+      "flywheel_of_terror:labyr"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.labyr"
+  },
+  "fake_house": {
+    "sounds": [
+      "flywheel_of_terror:fake_house"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.fake_house"
+  },
+  "apocalypsis": {
+    "sounds": [
+      "flywheel_of_terror:apocalypsis"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.apocalypsis"
+  },
+  "big_glitch": {
+    "sounds": [
+      "flywheel_of_terror:big_glitch"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.big_glitch"
+  },
+  "nightmare": {
+    "sounds": [
+      "flywheel_of_terror:nightmare"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.nightmare"
+  },
+  "teleport": {
+    "sounds": [
+      "flywheel_of_terror:teleport"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.teleport"
+  },
+
+  "shock": {
+    "sounds": [
+      "flywheel_of_terror:shock"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.shock"
+  },
+
+  "repair": {
+    "sounds": [
+      "flywheel_of_terror:repair"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.repair"
+  },
+  "lost_call": {
+    "sounds": [
+      "flywheel_of_terror:lost_call"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.lost_call"
+  },
+
+  "corrupted_kill": {
+    "sounds": [
+      "flywheel_of_terror:corrupted_kill"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.corrupted_kill"
+  },
+  "corrupted_break": {
+    "sounds": [
+      "flywheel_of_terror:corrupted_break"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.corrupted_break"
+  },
+
+  "his_hunt": {
+    "sounds": [
+      "flywheel_of_terror:his_hunt"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.his_hunt"
+  },
+
+  "shipwrecked": {
+    "sounds": [
+      "flywheel_of_terror:shipwrecked"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.shipwrecked"
+  },
+
+  "oh_no_here": {
+    "sounds": [
+      "flywheel_of_terror:oh_no_here"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.oh_no_here"
+  },
+
+  "some_eyes": {
+    "sounds": [
+      "flywheel_of_terror:some_eyes"
+    ],
+    "subtitle": "subtitles.flywheel_of_terror.some_eyes"
+  }
+
+}

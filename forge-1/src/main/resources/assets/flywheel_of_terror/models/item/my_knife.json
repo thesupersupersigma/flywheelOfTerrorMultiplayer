@@ -1,0 +1,19 @@
+{
+"parent": "item/handheld",
+"textures" : {
+"layer0" : "flywheel_of_terror:item/myknife"
+},
+
+  "display": {
+
+    "firstperson_righthand": {
+      "rotation": [0, -60, 0],
+      "translation": [0, 5, -2],
+      "scale": [1, 1, 1]
+      },
+    "thirdperson_righthand": {
+      "translation": [2, 3, 1],
+      "rotation": [0, 250 ,0],
+      "scale": [1, 1, 1]
+    }
+  }}

@@ -1,0 +1,36 @@
+package com.example.flywheel_of_terror;
+
+import com.example.flywheel_of_terror.client.client_safe;
+import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.event.TickEvent.PlayerTickEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+
+@EventBusSubscriber
+public class all_look_at_you {
+   public static int tics_of_looking = 0;
+
+   public static void do_event(Player player) {
+      tics_of_looking = 1000;
+      paralysis_event.start_paralysis(player, 13);
+   }
+
+   @SubscribeEvent
+   public static void every(PlayerTickEvent event) {
+      Player player = event.player;
+      tics_of_looking--;
+      if (tics_of_looking > 0) {
+         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> client_safe.allLookAtYouTick(player));
+      }
+   }
+
+   @SubscribeEvent
+   public static void god(LivingHurtEvent event) {
+      if (tics_of_looking > 0) {
+         event.setCanceled(true);
+      }
+   }
+}
