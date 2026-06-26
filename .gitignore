@@ -1,0 +1,59 @@
+# Environment
+.env
+
+# Claude Code session IDs
+claudeChats.txt
+
+# Gradle
+.gradle/
+forge-1/build/
+forge-1/.gradle/
+forge-1/out/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
+
+# Decompiler output (source of truth is the original jar)
+decompiled/
+
+# Vineflower decompiler jar
+vineflower.jar
+
+# Original mod jar (don't commit the original)
+flywheel_of_terror-0.7.jar
+
+# Forge run directories (generated on first launch)
+forge-1/run/
+
+# Forge cache
+forge-1/forge-*.log
+forge-1/minecraft_mapped*
+
+# Built artifacts (the output jar goes here)
+forge-1/build/libs/
+
+# Java
+*.class
+*.jar
+!forge-1/gradle/wrapper/gradle-wrapper.jar
+
+logs/
