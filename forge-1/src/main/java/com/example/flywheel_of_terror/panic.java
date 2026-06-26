@@ -17,6 +17,7 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -58,10 +59,13 @@ public class panic {
       }
    }
 
-   @SubscribeEvent
-   public static void night(RenderLevelStageEvent event) {
-      if (tics_of_black > 0) {
-         RenderSystem.setShaderColor(0.01F, 0.01F, 0.0F, 1.0F);
+   @EventBusSubscriber(value = {Dist.CLIENT})
+   public static class client_events {
+      @SubscribeEvent
+      public static void night(RenderLevelStageEvent event) {
+         if (tics_of_black > 0) {
+            RenderSystem.setShaderColor(0.01F, 0.01F, 0.0F, 1.0F);
+         }
       }
    }
 

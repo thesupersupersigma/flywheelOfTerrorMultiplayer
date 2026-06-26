@@ -11,6 +11,7 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -53,14 +54,17 @@ public class family {
       player.level().addFreshEntity(daughter);
    }
 
-   @SubscribeEvent
-   public static void render_house(RenderGuiEvent event) {
-      int width = Minecraft.getInstance().getWindow().getGuiScaledWidth();
-      int height = Minecraft.getInstance().getWindow().getGuiScaledHeight();
-      if (tics_of_house > 0) {
-         event.getGuiGraphics()
-            .blit(new ResourceLocation("flywheel_of_terror", "textures/lore/house.png"), 0, 0, width, height, 0.0F, 0.0F, 1080, 1080, 1080, 1080);
-         Minecraft.getInstance().setScreen(null);
+   @EventBusSubscriber(value = {Dist.CLIENT})
+   public static class client_events {
+      @SubscribeEvent
+      public static void render_house(RenderGuiEvent event) {
+         int width = Minecraft.getInstance().getWindow().getGuiScaledWidth();
+         int height = Minecraft.getInstance().getWindow().getGuiScaledHeight();
+         if (tics_of_house > 0) {
+            event.getGuiGraphics()
+               .blit(new ResourceLocation("flywheel_of_terror", "textures/lore/house.png"), 0, 0, width, height, 0.0F, 0.0F, 1080, 1080, 1080, 1080);
+            Minecraft.getInstance().setScreen(null);
+         }
       }
    }
 

@@ -220,7 +220,7 @@ import org.jetbrains.annotations.ApiStatus.Internal;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
-@EventBusSubscriber
+@EventBusSubscriber(value = {Dist.CLIENT})
 public class fake_menu_hook {
    private static final Logger LOGGER = LogManager.getLogger();
    private static final Marker CLIENTHOOKS = MarkerManager.getMarker("CLIENTHOOKS");

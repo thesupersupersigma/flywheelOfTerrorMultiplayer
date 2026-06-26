@@ -15,6 +15,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock;
@@ -28,10 +29,13 @@ public class thunder_behind {
    public static int tics_to_punch = -10;
    public static int tics_of_madness = 0;
 
-   @SubscribeEvent
-   public static void blood_rain(RenderLevelStageEvent event) {
-      if (tics_of_madness >= 0) {
-         RenderSystem.setShaderColor(20.0F, 10.0F, 40.0F, 1.0F);
+   @EventBusSubscriber(value = {Dist.CLIENT})
+   public static class client_events {
+      @SubscribeEvent
+      public static void blood_rain(RenderLevelStageEvent event) {
+         if (tics_of_madness >= 0) {
+            RenderSystem.setShaderColor(20.0F, 10.0F, 40.0F, 1.0F);
+         }
       }
    }
 

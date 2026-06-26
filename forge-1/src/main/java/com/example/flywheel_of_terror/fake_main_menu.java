@@ -49,7 +49,7 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.internal.BrandingControl;
 import org.slf4j.Logger;
 
-@EventBusSubscriber
+@EventBusSubscriber(value = {Dist.CLIENT})
 public class fake_main_menu extends Screen {
    private static final Logger LOGGER = LogUtils.getLogger();
    private static final String DEMO_LEVEL_ID = "Demo_World";

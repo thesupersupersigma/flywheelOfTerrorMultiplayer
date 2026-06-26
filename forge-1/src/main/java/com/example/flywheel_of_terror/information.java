@@ -66,27 +66,30 @@ public class information {
       event.getEntity().getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.1);
    }
 
-   @SubscribeEvent(
-      priority = EventPriority.LOWEST
-   )
-   public static void onRenderHud(Post event) {
-      current_screen = event.getScreen();
-   }
+   @EventBusSubscriber(value = {Dist.CLIENT})
+   public static class client_events {
+      @SubscribeEvent(
+         priority = EventPriority.LOWEST
+      )
+      public static void onRenderHud(Post event) {
+         current_screen = event.getScreen();
+      }
 
-   @SubscribeEvent(
-      priority = EventPriority.LOWEST
-   )
-   public static void close(Closing event) {
-      current_screen = null;
-      show_model = true;
-   }
+      @SubscribeEvent(
+         priority = EventPriority.LOWEST
+      )
+      public static void close(Closing event) {
+         current_screen = null;
+         show_model = true;
+      }
 
-   @SubscribeEvent(
-      priority = EventPriority.LOWEST
-   )
-   public static void open(Opening event) {
-      if (event.getScreen() instanceof InventoryScreen && random.nextInt(1, 30) == 4) {
-         show_model = false;
+      @SubscribeEvent(
+         priority = EventPriority.LOWEST
+      )
+      public static void open(Opening event) {
+         if (event.getScreen() instanceof InventoryScreen && random.nextInt(1, 30) == 4) {
+            show_model = false;
+         }
       }
    }
 

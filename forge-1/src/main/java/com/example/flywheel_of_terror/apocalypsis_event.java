@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -28,12 +29,15 @@ public class apocalypsis_event {
    public static Random random = new Random();
    public static float red_intense = 0.0F;
 
-   @SubscribeEvent
-   public static void blood_rain(RenderLevelStageEvent event) {
-      if (tics_of_event >= 0) {
-         RenderSystem.setShaderColor(red_intense, 0.0F, 0.0F, 1.0F);
-         if (red_intense < 3.0F) {
-            red_intense += 3.5E-4F;
+   @EventBusSubscriber(value = {Dist.CLIENT})
+   public static class client_events {
+      @SubscribeEvent
+      public static void blood_rain(RenderLevelStageEvent event) {
+         if (tics_of_event >= 0) {
+            RenderSystem.setShaderColor(red_intense, 0.0F, 0.0F, 1.0F);
+            if (red_intense < 3.0F) {
+               red_intense += 3.5E-4F;
+            }
          }
       }
    }

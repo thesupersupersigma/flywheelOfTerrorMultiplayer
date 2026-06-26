@@ -5,12 +5,13 @@ import java.util.Map;
 import net.minecraft.client.gui.screens.worldselection.PresetEditor;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.levelgen.presets.WorldPreset;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterPresetEditorsEvent;
 import net.minecraftforge.fml.ModLoader;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import org.jetbrains.annotations.Nullable;
 
-@EventBusSubscriber
+@EventBusSubscriber(value = {Dist.CLIENT})
 public final class fake_preset {
    private static Map<ResourceKey<WorldPreset>, PresetEditor> editors = Map.of();
 

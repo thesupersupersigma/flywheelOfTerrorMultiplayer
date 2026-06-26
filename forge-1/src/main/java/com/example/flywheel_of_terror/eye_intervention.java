@@ -9,6 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.client.event.RenderGuiEvent.Post;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
@@ -107,46 +108,6 @@ public class eye_intervention {
    }
 
    @SubscribeEvent
-   public static void render_eyes(Post event) {
-      int width = Minecraft.getInstance().getWindow().getGuiScaledWidth();
-      int height = Minecraft.getInstance().getWindow().getGuiScaledHeight();
-
-      for (int count_of_eyes = 1; count_of_eyes <= current_count_of_eyes; count_of_eyes++) {
-         if (current_count_of_eyes <= 15) {
-            int required_id = count_of_eyes - 1;
-            if (random.nextInt(1, 6) == 3) {
-               eye_states2.set(required_id, random.nextInt(1, 5));
-            }
-
-            int required_width_offset = eye_states.get(required_id).get_width_offset_by_screen_size(width);
-            int required_height_offset = eye_states.get(required_id).get_height_offset_by_screen_size(height);
-            int required_width_size = eye_states.get(required_id).get_width_size_by_screen_size(width);
-            int required_height_size = eye_states.get(required_id).get_height_size_by_screen_size(height);
-            event.getGuiGraphics()
-               .blit(
-                  new ResourceLocation("flywheel_of_terror", "textures/eyes/eye" + eye_states2.get(required_id) + ".png"),
-                  required_width_offset,
-                  required_height_offset,
-                  required_width_size,
-                  required_height_size,
-                  0.0F,
-                  0.0F,
-                  200,
-                  100,
-                  200,
-                  100
-               );
-            Minecraft.getInstance().setScreen(null);
-         } else {
-            event_in_process = false;
-            current_count_of_eyes = 0;
-            red_intense = 1.0F;
-            end_music = true;
-         }
-      }
-   }
-
-   @SubscribeEvent
    public static void add_eyes(PlayerTickEvent event) {
       Player player = event.player;
       boolean client = player.level().isClientSide();
@@ -171,12 +132,55 @@ public class eye_intervention {
       tics_to_next_eye--;
    }
 
-   @SubscribeEvent
-   public static void red(RenderLevelStageEvent event) {
-      if (event_in_process) {
-         RenderSystem.setShaderColor(red_intense, 1.0F, 1.0F, 1.0F);
-         if (red_intense < 4.0F) {
-            red_intense += 9.5E-4F;
+   @EventBusSubscriber(value = {Dist.CLIENT})
+   public static class client_events {
+      @SubscribeEvent
+      public static void render_eyes(Post event) {
+         int width = Minecraft.getInstance().getWindow().getGuiScaledWidth();
+         int height = Minecraft.getInstance().getWindow().getGuiScaledHeight();
+
+         for (int count_of_eyes = 1; count_of_eyes <= current_count_of_eyes; count_of_eyes++) {
+            if (current_count_of_eyes <= 15) {
+               int required_id = count_of_eyes - 1;
+               if (random.nextInt(1, 6) == 3) {
+                  eye_states2.set(required_id, random.nextInt(1, 5));
+               }
+
+               int required_width_offset = eye_states.get(required_id).get_width_offset_by_screen_size(width);
+               int required_height_offset = eye_states.get(required_id).get_height_offset_by_screen_size(height);
+               int required_width_size = eye_states.get(required_id).get_width_size_by_screen_size(width);
+               int required_height_size = eye_states.get(required_id).get_height_size_by_screen_size(height);
+               event.getGuiGraphics()
+                  .blit(
+                     new ResourceLocation("flywheel_of_terror", "textures/eyes/eye" + eye_states2.get(required_id) + ".png"),
+                     required_width_offset,
+                     required_height_offset,
+                     required_width_size,
+                     required_height_size,
+                     0.0F,
+                     0.0F,
+                     200,
+                     100,
+                     200,
+                     100
+                  );
+               Minecraft.getInstance().setScreen(null);
+            } else {
+               event_in_process = false;
+               current_count_of_eyes = 0;
+               red_intense = 1.0F;
+               end_music = true;
+            }
+         }
+      }
+
+      @SubscribeEvent
+      public static void red(RenderLevelStageEvent event) {
+         if (event_in_process) {
+            RenderSystem.setShaderColor(red_intense, 1.0F, 1.0F, 1.0F);
+            if (red_intense < 4.0F) {
+               red_intense += 9.5E-4F;
+            }
          }
       }
    }

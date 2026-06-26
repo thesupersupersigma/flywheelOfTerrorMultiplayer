@@ -61,28 +61,6 @@ public class paranoia {
    public static final String seconds_to_call_nbt = "second_to_call";
 
    @SubscribeEvent
-   public static void silence(PlaySoundEvent event) {
-      if (event.getSound() != null) {
-         if (event.getSound().getLocation().getPath().contains("entity")
-            && !event.getSound().getLocation().getPath().contains("player")
-            && !event.getSound().getLocation().getPath().contains("bolt")) {
-            event.setSound(null);
-            return;
-         }
-
-         if (event.getSound().getLocation().getPath().contains("door")) {
-            event.setSound(null);
-            return;
-         }
-
-         if (event.getSound().getLocation().getPath().contains("lava")) {
-            event.setSound(null);
-            return;
-         }
-      }
-   }
-
-   @SubscribeEvent
    public static void undefined_noises(PlayerTickEvent event) {
       Player player = event.player;
       if (player.tickCount % 40 == 0) {
@@ -147,20 +125,6 @@ public class paranoia {
                bro2.setPos(pos2);
                event.getLevel().addFreshEntity(bro2);
          }
-      }
-   }
-
-   @SubscribeEvent
-   public static void view(Post event) {
-      if (tics_of_call > 0) {
-         time_to_event++;
-         int width = Minecraft.getInstance().getWindow().getGuiScaledWidth();
-         int height = Minecraft.getInstance().getWindow().getGuiScaledHeight();
-         event.getGuiGraphics()
-            .blit(
-               new ResourceLocation("flywheel_of_terror", "textures/calls/call" + current_call + ".png"), 0, 0, width, height, 0.0F, 0.0F, 1080, 608, 1080, 608
-            );
-         Minecraft.getInstance().setScreen(null);
       }
    }
 
@@ -566,6 +530,45 @@ public class paranoia {
 
             sleep = false;
             tics_to_door = -32;
+         }
+      }
+   }
+
+   @EventBusSubscriber(value = {Dist.CLIENT})
+   public static class client_events {
+      @SubscribeEvent
+      public static void silence(PlaySoundEvent event) {
+         if (event.getSound() != null) {
+            if (event.getSound().getLocation().getPath().contains("entity")
+               && !event.getSound().getLocation().getPath().contains("player")
+               && !event.getSound().getLocation().getPath().contains("bolt")) {
+               event.setSound(null);
+               return;
+            }
+
+            if (event.getSound().getLocation().getPath().contains("door")) {
+               event.setSound(null);
+               return;
+            }
+
+            if (event.getSound().getLocation().getPath().contains("lava")) {
+               event.setSound(null);
+               return;
+            }
+         }
+      }
+
+      @SubscribeEvent
+      public static void view(Post event) {
+         if (tics_of_call > 0) {
+            time_to_event++;
+            int width = Minecraft.getInstance().getWindow().getGuiScaledWidth();
+            int height = Minecraft.getInstance().getWindow().getGuiScaledHeight();
+            event.getGuiGraphics()
+               .blit(
+                  new ResourceLocation("flywheel_of_terror", "textures/calls/call" + current_call + ".png"), 0, 0, width, height, 0.0F, 0.0F, 1080, 608, 1080, 608
+               );
+            Minecraft.getInstance().setScreen(null);
          }
       }
    }

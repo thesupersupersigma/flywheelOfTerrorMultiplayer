@@ -9,6 +9,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.sound.PlaySoundEvent;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 import net.minecraftforge.event.TickEvent.ServerTickEvent;
@@ -28,10 +29,13 @@ public class something_wrong {
       tics_of_silence--;
    }
 
-   @SubscribeEvent
-   public static void silence(PlaySoundEvent event) {
-      if (event.getSound() != null && tics_of_silence > 0) {
-         event.setSound(null);
+   @EventBusSubscriber(value = {Dist.CLIENT})
+   public static class client_events {
+      @SubscribeEvent
+      public static void silence(PlaySoundEvent event) {
+         if (event.getSound() != null && tics_of_silence > 0) {
+            event.setSound(null);
+         }
       }
    }
 

@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiEvent.Post;
 import net.minecraftforge.event.TickEvent.ServerTickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -55,6 +56,8 @@ public class oh_no_between_screens {
       }
    }
 
+   @EventBusSubscriber(value = {Dist.CLIENT})
+   public static class client_events {
    @SubscribeEvent
    public static void render(Post event) {
       if (tics_of_event >= 1 && information.current_screen == null) {
@@ -125,5 +128,6 @@ public class oh_no_between_screens {
             cycle = 1;
          }
       }
+   }
    }
 }

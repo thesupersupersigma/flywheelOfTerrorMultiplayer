@@ -10,6 +10,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
@@ -119,10 +120,13 @@ public class shipwrecked {
       }
    }
 
-   @SubscribeEvent
-   public static void blood_water(RenderLevelStageEvent event) {
-      if (red_water) {
-         RenderSystem.setShaderColor(0.5F, 0.1F, 0.1F, 1.0F);
+   @EventBusSubscriber(value = {Dist.CLIENT})
+   public static class client_events {
+      @SubscribeEvent
+      public static void blood_water(RenderLevelStageEvent event) {
+         if (red_water) {
+            RenderSystem.setShaderColor(0.5F, 0.1F, 0.1F, 1.0F);
+         }
       }
    }
 }

@@ -35,12 +35,18 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
       (manifest `MixinConfigs`). `@Overwrite` `this`→target casts fixed (`(Entity)(Object)this`).
       `scarecrow` (`@Overwrite Entity#tick`), `less_trees` (`@Overwrite TreeFeature`), `fake_invent`
       (`InventoryScreen`, global `show_model`) still need the runtime-safety decision (Phase 2/3).
-- [ ] Dedicated server boots and a client can connect (no `NoClassDefFoundError`).
-      NOTE: still-blocking — several common `@EventBusSubscriber` classes (`paranoia`, `information`,
-      `eye_intervention`, `oh_no_between_screens`, `family`, `deep_terror`, the `fake_*` menus, …)
-      subscribe client-only Forge events (`RenderGuiEvent`/`ScreenEvent`) and/or import
-      `net.minecraft.client.*`; their auto-registration loads client classes on a dedicated server.
-      Move these handlers to `@EventBusSubscriber(Dist.CLIENT)` / client-only classes before boot.
+- [~] Dedicated server boots and a client can connect (no `NoClassDefFoundError`).
+      DONE (class-load safety): every common `@EventBusSubscriber` class that subscribed a client-only
+      Forge event (`RenderGuiEvent`/`ScreenEvent`/`RenderLevelStageEvent`/`PlaySoundEvent`) or extended a
+      client `Screen` is now `Dist.CLIENT`-gated, so a dedicated server no longer loads client classes
+      during auto-registration. Pure-client classes (`deep_terror`, `fake_preset`, `fake_menu_hook`,
+      `fake_main_menu`, `fake_exit`) got `@EventBusSubscriber(value = {Dist.CLIENT})`. Mixed classes
+      (`apocalypsis_event`, `eye_intervention`, `family`, `information`, `oh_no_between_screens`,
+      `panic`, `paranoia`, `shipwrecked`, `something_wrong`, `thunder_behind`) had their client-only
+      handlers moved into a `Dist.CLIENT`-gated nested `client_events` class while their server handlers
+      stayed on the common bus. `gradlew build` green. (`declinemusic`, `flywheel_of_terror`'s
+      `SoundEngineLoadEvent`/`FMLClientSetupEvent`, and `fake_menu_hook.ClientEvents` were already gated.)
+      Still to verify: actual `runServer` smoke-boot + a client connecting.
 
 ## Phase 2 — De-globalize per-player state
 - [ ] Build the full inventory of `public static` per-player fields (~120+; see CLAUDE.md §2.2/§2.3).
