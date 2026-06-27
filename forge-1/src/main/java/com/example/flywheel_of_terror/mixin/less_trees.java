@@ -14,7 +14,9 @@ import net.minecraft.world.level.levelgen.feature.foliageplacers.FoliagePlacer.F
 import net.minecraft.world.level.levelgen.feature.foliageplacers.FoliagePlacer.FoliageSetter;
 import net.minecraft.world.level.levelgen.feature.rootplacers.RootPlacer;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(
    value = {TreeFeature.class},
@@ -23,18 +25,24 @@ import org.spongepowered.asm.mixin.Overwrite;
 public class less_trees {
    private static Random random = new Random();
 
-   @Overwrite
-   private boolean doPlace(
+   // SRG m_225257_ = TreeFeature#doPlace (returns boolean). The original @Overwrite replaced the
+   // whole method body, so we inject at HEAD and set the return value on every path; because the
+   // CallbackInfoReturnable is cancellable, setting a return value prevents the vanilla body from
+   // running. This makes ~29/30 of all tree placements fail. remap = false because the SRG name is
+   // written directly (this workspace generates no mixin refmap).
+   @Inject(method = "m_225257_", at = @At("HEAD"), cancellable = true, remap = false)
+   private void flywheel$lessTrees(
       WorldGenLevel p_225258_,
       RandomSource p_225259_,
       BlockPos p_225260_,
       BiConsumer<BlockPos, BlockState> p_225261_,
       BiConsumer<BlockPos, BlockState> p_225262_,
       FoliageSetter p_273670_,
-      TreeConfiguration p_225264_
+      TreeConfiguration p_225264_,
+      CallbackInfoReturnable<Boolean> cir
    ) {
       if (random.nextInt(1, 30) != 20) {
-         return false;
+         cir.setReturnValue(false);
       } else {
          int i = p_225264_.trunkPlacer.getTreeHeight(p_225259_);
          int j = p_225264_.foliagePlacer.foliageHeight(p_225259_, i, p_225264_);
@@ -49,17 +57,17 @@ public class less_trees {
             if (k1 >= i || !optionalint.isEmpty() && k1 >= optionalint.getAsInt()) {
                if (p_225264_.rootPlacer.isPresent()
                   && !((RootPlacer)p_225264_.rootPlacer.get()).placeRoots(p_225258_, p_225261_, p_225259_, p_225260_, blockpos, p_225264_)) {
-                  return false;
+                  cir.setReturnValue(false);
                } else {
                   List<FoliageAttachment> list = p_225264_.trunkPlacer.placeTrunk(p_225258_, p_225262_, p_225259_, k1, blockpos, p_225264_);
                   list.forEach(p_272582_ -> p_225264_.foliagePlacer.createFoliage(p_225258_, p_273670_, p_225259_, p_225264_, k1, p_272582_, j, l));
-                  return true;
+                  cir.setReturnValue(true);
                }
             } else {
-               return false;
+               cir.setReturnValue(false);
             }
          } else {
-            return false;
+            cir.setReturnValue(false);
          }
       }
    }

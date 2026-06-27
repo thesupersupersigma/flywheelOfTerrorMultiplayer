@@ -10,10 +10,12 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
+import net.minecraftforge.api.distmarker.Dist;
 
 @EventBusSubscriber(
    modid = "flywheel_of_terror",
-   bus = Bus.FORGE
+   bus = Bus.FORGE,
+   value = {Dist.CLIENT}
 )
 public class somewho_renderer extends HumanoidMobRenderer<somewho, PlayerModel<somewho>> {
    public somewho_renderer(Context context) {

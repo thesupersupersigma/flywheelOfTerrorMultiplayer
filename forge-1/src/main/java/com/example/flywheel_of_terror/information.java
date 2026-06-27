@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import com.example.flywheel_of_terror.client.client_safe;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.CraftingScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -45,7 +45,13 @@ public class information {
    public static LivingEntity livingingrok;
    public static ItemStack last_dropped;
    public static boolean somewho_dropped = true;
-   public static Screen current_screen;
+   // current_screen is client-only state (the open GUI). Typed Object so this common class — which is
+   // registered on the FORGE bus and therefore loaded on a dedicated server — does not reference the
+   // client-only net.minecraft.client.gui.screens.Screen class. The inventory_open/crafting_open flags
+   // below let server-side schedulers test "which GUI is open" without referencing a Screen subclass.
+   public static Object current_screen;
+   public static boolean inventory_open = false;
+   public static boolean crafting_open = false;
    public static ItemStack head = new ItemStack(Items.PLAYER_HEAD);
    public static UUID playeruuid;
    public static boolean show_model = true;
@@ -73,6 +79,8 @@ public class information {
       )
       public static void onRenderHud(Post event) {
          current_screen = event.getScreen();
+         inventory_open = event.getScreen() instanceof InventoryScreen;
+         crafting_open = event.getScreen() instanceof CraftingScreen;
       }
 
       @SubscribeEvent(
@@ -80,6 +88,8 @@ public class information {
       )
       public static void close(Closing event) {
          current_screen = null;
+         inventory_open = false;
+         crafting_open = false;
          show_model = true;
       }
 

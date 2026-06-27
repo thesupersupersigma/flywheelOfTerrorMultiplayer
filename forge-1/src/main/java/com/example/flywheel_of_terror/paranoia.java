@@ -2,8 +2,6 @@ package com.example.flywheel_of_terror;
 
 import java.util.Random;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.inventory.CraftingScreen;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -509,7 +507,7 @@ public class paranoia {
 
       if (random.nextInt(1, 400) == 54
          && player.tickCount % 40 == 0
-         && (information.current_screen instanceof InventoryScreen || information.current_screen instanceof CraftingScreen)) {
+         && (information.inventory_open || information.crafting_open)) {
          player.playSound((SoundEvent)register_sounds.breath1.get(), 1.0F, 1.0F);
       }
 

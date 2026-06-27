@@ -8,10 +8,12 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
+import net.minecraftforge.api.distmarker.Dist;
 
 @EventBusSubscriber(
    modid = "flywheel_of_terror",
-   bus = Bus.FORGE
+   bus = Bus.FORGE,
+   value = {Dist.CLIENT}
 )
 public class oh_no_behind_renderer extends HumanoidMobRenderer<oh_no_behind, PlayerModel<oh_no_behind>> {
    private static final ResourceLocation TEXTURE = new ResourceLocation("flywheel_of_terror", "textures/entity/oh_no_behind.png");

@@ -8,10 +8,12 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
+import net.minecraftforge.api.distmarker.Dist;
 
 @EventBusSubscriber(
    modid = "flywheel_of_terror",
-   bus = Bus.FORGE
+   bus = Bus.FORGE,
+   value = {Dist.CLIENT}
 )
 public class headless_steve_renderer extends HumanoidMobRenderer<headless_steve, PlayerModel<headless_steve>> {
    public headless_steve_renderer(Context context) {

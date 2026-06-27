@@ -5,6 +5,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.commands.arguments.EntityAnchorArgument.Anchor;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -73,6 +74,18 @@ public final class client_safe {
       if ((Integer)Minecraft.getInstance().options.renderDistance().get() < 5) {
          Minecraft.getInstance().options.renderDistance().set(5);
          Minecraft.getInstance().options.save();
+      }
+   }
+
+   /** exist_terror_event.writechar: type the fake "Let me out" text into a chat screen. */
+   public static void existTerrorTypeChat(String context) {
+      Minecraft.getInstance().setScreen(new ChatScreen(context));
+   }
+
+   /** exist_terror_event.writechar: close the player's container once the message finishes. */
+   public static void existTerrorClose() {
+      if (Minecraft.getInstance().player != null) {
+         Minecraft.getInstance().player.closeContainer();
       }
    }
 

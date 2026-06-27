@@ -1,6 +1,5 @@
 package com.example.flywheel_of_terror;
 
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.player.Player;
@@ -18,7 +17,7 @@ public class periferia {
    public static void every_time(PlayerTickEvent event) {
       Player player = event.player;
       if (!player.level().isClientSide()) {
-         if (event_in_process && information.current_screen instanceof InventoryScreen) {
+         if (event_in_process && information.inventory_open) {
             tics_to_spawn--;
          }
 
