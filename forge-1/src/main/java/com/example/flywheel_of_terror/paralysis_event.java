@@ -51,7 +51,7 @@ public class paralysis_event {
    public static boolean wait_situation(Player player) {
       CompoundTag global_tag = player.getPersistentData();
       CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
-      return player.onGround() && information.block_under_player instanceof GrassBlock && tag.getBoolean("wait_paralysis");
+      return player.onGround() && information.block_under(player) instanceof GrassBlock && tag.getBoolean("wait_paralysis");
    }
 
    @SubscribeEvent

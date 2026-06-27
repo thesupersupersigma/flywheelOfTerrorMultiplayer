@@ -18,17 +18,13 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class something_wrong {
-   // seconds_to_change → per-player NBT (server-authoritative); tics_of_silence stays static
-   // (client sound-silencing A/V, Phase 3).
+   // seconds_to_change → per-player NBT (server-authoritative). Phase 3: tics_of_silence (read by the
+   // client PlaySoundEvent handler) is set + counted down on the client via the SILENCE FxPacket, so
+   // the sound-muting window belongs to the one player whose terrain is being reshaped.
    public static Random random = new Random();
    public static final int min_time = 180;
    public static final int max_time = 360;
    public static int tics_of_silence = 0;
-
-   @SubscribeEvent
-   public static void serv(ServerTickEvent event) {
-      tics_of_silence--;
-   }
 
    @EventBusSubscriber(value = {Dist.CLIENT})
    public static class client_events {
@@ -163,7 +159,7 @@ public class something_wrong {
 
          double xrot = (double)player.getXRot();
          if (state.getInt(player, "seconds_to_change") <= 0 && terror_beginning.far_away_house(player) && xrot > -10.0 && xrot < 10.0) {
-            tics_of_silence = 100;
+            Network.fx(player, Network.SILENCE, 100);
             state.putInt(player, "seconds_to_change", random.nextInt(180, 360));
             int i = random.nextInt(1, 3);
             switch (i) {

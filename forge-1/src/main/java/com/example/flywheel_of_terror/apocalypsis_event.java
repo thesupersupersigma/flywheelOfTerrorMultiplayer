@@ -24,10 +24,9 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 @EventBusSubscriber
 public class apocalypsis_event {
    // event_in_process and the server-side gameplay timer move to per-player NBT ("apoc_active" /
-   // "apoc_tics"). tics_of_event + red_intense + sound_must_be stay static for the client shader/
-   // sound (Phase 3).
+   // "apoc_tics"). Phase 3: tics_of_event + red_intense (the client blood-sky shader) are set +
+   // ticked client-side via an S2C FxPacket; the apocalypsis sound is an S2C PlaySoundPacket.
    public static int tics_of_event = -2;
-   public static boolean sound_must_be = false;
    public static Random random = new Random();
    public static float red_intense = 0.0F;
 
@@ -53,28 +52,18 @@ public class apocalypsis_event {
       Player player = event.player;
       CompoundTag global_tag = player.getPersistentData();
       CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
-      if (player.level().isClientSide() && sound_must_be) {
-         player.playNotifySound((SoundEvent)register_sounds.apocalypsis.get(), SoundSource.RECORDS, 1.0F, 1.0F);
-         sound_must_be = false;
-      }
-
       if (state.getBool(player, "apoc_active") && !player.level().isClientSide() && player.getY() > 60.0) {
          tag.putBoolean("apoc", true);
          global_tag.put("flywheel_of_terror", tag);
-         red_intense = 0.5F;
-         sound_must_be = true;
+         Network.sound(player, (SoundEvent)register_sounds.apocalypsis.get());
+         Network.fx(player, Network.APOC, 860);
          if (player.level() instanceof ServerLevel serv) {
             serv.setDayTime(14500L);
             serv.setWeatherParameters(0, 360, true, true);
          }
 
          state.putBool(player, "apoc_active", false);
-         tics_of_event = 860;
          state.putInt(player, "apoc_tics", 860);
-      }
-
-      if (player.level().isClientSide()) {
-         tics_of_event--;
       }
 
       int apoc_tics = state.getInt(player, "apoc_tics");
@@ -137,6 +126,7 @@ public class apocalypsis_event {
             int y = player.level().getHeight(Types.WORLD_SURFACE, (int)copy.getX(), (int)copy.getZ());
             pos = new Vec3(player.getX() + xx, (double)(y + 1), player.getZ() + zz);
             copy.setPos(pos);
+            information.setTarget(copy, player);
             player.level().addFreshEntity(copy);
          }
 

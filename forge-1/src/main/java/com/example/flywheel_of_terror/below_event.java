@@ -20,9 +20,7 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 )
 public class below_event {
    // Per-player state → NBT ("below_active/2", "below_escape", "below_time_to_end", "below_XC/ZC",
-   // "below_height"). sound_must_be stays a static cross-side A/V flag (Phase 3).
-   public static boolean sound_must_be = false;
-
+   // "below_height"). Phase 3: the "you hit the bottom" sound is now an S2C packet.
    public static void set_active(Player player, boolean value) {
       state.putBool(player, "below_active", value);
    }
@@ -49,7 +47,7 @@ public class below_event {
       boolean exclude_escape = tag.getBoolean("below_escape");
       int time_to_end = tag.getInt("below_time_to_end");
       double height = tag.getDouble("below_height");
-      if (player.level().isClientSide() && player.tickCount % 40 == 0 && exclude_escape) {
+      if (!player.level().isClientSide() && player.tickCount % 40 == 0 && exclude_escape) {
          tag.putInt("below_time_to_end", time_to_end - 1);
          global_tag.put("flywheel_of_terror", tag);
       }
@@ -65,19 +63,14 @@ public class below_event {
          player.addEffect(blind);
       }
 
-      if (sound_must_be && player.level().isClientSide()) {
-         player.playSound((SoundEvent)register_sounds.below2.get(), 1.0F, 1.0F);
-         sound_must_be = false;
-      }
-
-      if (tag.getBoolean("below_active") && player.getY() > 20.0 && player.level().isClientSide()) {
+      if (tag.getBoolean("below_active") && player.getY() > 20.0 && !player.level().isClientSide()) {
          paranoia.set_seconds_to_call(player, 60);
          tag.putDouble("below_height", player.getY() - 60.0);
          tag.putBoolean("below_active", false);
          tag.putBoolean("below_active2", true);
          global_tag.put("flywheel_of_terror", tag);
          player.heal(20.0F);
-         player.playSound((SoundEvent)register_sounds.below1.get(), 1.0F, 1.0F);
+         Network.sound(player, (SoundEvent)register_sounds.below1.get());
          MobEffectInstance blind = new MobEffectInstance(MobEffects.BLINDNESS, 740, 10, false, true, false);
          player.addEffect(blind);
       }
@@ -108,7 +101,7 @@ public class below_event {
 
          player.teleportTo(player.getX(), player.getY() - 1.0, player.getZ());
          if (player.getY() <= tag.getDouble("below_height")) {
-            sound_must_be = true;
+            Network.sound(player, (SoundEvent)register_sounds.below2.get());
 
             for (double x = player.getX() - 20.0; x <= player.getX() + 20.0; x++) {
                for (double y = player.getY() - 20.0; y <= player.getY() + 20.0; y++) {

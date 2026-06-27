@@ -18,14 +18,14 @@ public class scarecrow2 {
    // removed. remap = false because the SRG name is written directly (no mixin refmap here).
    @Inject(method = "m_6153_", at = @At("HEAD"), cancellable = true, remap = false)
    private void flywheel$scarecrowTickDeath(CallbackInfo ci) {
-      LivingEntity bebra = (LivingEntity)(Object)this;
-      if (bebra.deathTime <= 20) {
-         bebra.deathTime++;
+      LivingEntity self = (LivingEntity)(Object)this;
+      if (self.deathTime <= 20) {
+         self.deathTime++;
       }
 
-      if (bebra.deathTime >= 20 && !bebra.level().isClientSide() && !bebra.isRemoved() && bebra.getPersistentData().getInt("scarecrow") != 5) {
-         bebra.level().broadcastEntityEvent(bebra, (byte)60);
-         bebra.remove(RemovalReason.KILLED);
+      if (self.deathTime >= 20 && !self.level().isClientSide() && !self.isRemoved() && self.getPersistentData().getInt("scarecrow") != 5) {
+         self.level().broadcastEntityEvent(self, (byte)60);
+         self.remove(RemovalReason.KILLED);
       }
 
       ci.cancel();

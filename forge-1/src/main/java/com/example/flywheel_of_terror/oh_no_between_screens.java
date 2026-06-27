@@ -21,8 +21,8 @@ public class oh_no_between_screens {
    public static int frame_height = 1080;
 
    public static void do_event(Player player) {
-      tics_of_event = 400;
       set_event_was(player, true);
+      Network.fx(player, Network.OHNO_FRAMES, 400);
    }
 
    public static void set_event_was(Player player, boolean state) {
@@ -38,29 +38,14 @@ public class oh_no_between_screens {
       return tag.getBoolean(nbt_adresses.between_nbt);
    }
 
-   @SubscribeEvent
-   public static void serv22(ServerTickEvent event) {
-      tics_of_event--;
-      if (cycle == 1) {
-         current_frame++;
-      } else {
-         current_frame--;
-      }
-
-      if (current_frame == count_of_frames && cycle == 1) {
-         cycle = 2;
-      }
-
-      if (current_frame == 1 && cycle == 2) {
-         cycle = 1;
-      }
-   }
+   // Phase 3: the frame counter advances on the client (see client_net.clientTick), driven by the
+   // OHNO_FRAMES FxPacket, so each client animates its own overlay independently.
 
    @EventBusSubscriber(value = {Dist.CLIENT})
    public static class client_events {
    @SubscribeEvent
    public static void render(Post event) {
-      if (tics_of_event >= 1 && information.current_screen == null) {
+      if (tics_of_event >= 1 && Minecraft.getInstance().screen == null) {
          int width = Minecraft.getInstance().getWindow().getGuiScaledWidth();
          int height = Minecraft.getInstance().getWindow().getGuiScaledHeight();
          position_and_size_at_screen place = new position_and_size_at_screen(20, 20, 80, 90);
@@ -89,7 +74,7 @@ public class oh_no_between_screens {
 
    @SubscribeEvent
    public static void render2(net.minecraftforge.client.event.ScreenEvent.Render.Post event) {
-      if (tics_of_event >= 1 && information.current_screen != null) {
+      if (tics_of_event >= 1 && Minecraft.getInstance().screen != null) {
          int width = Minecraft.getInstance().getWindow().getGuiScaledWidth();
          int height = Minecraft.getInstance().getWindow().getGuiScaledHeight();
          position_and_size_at_screen place = new position_and_size_at_screen(20, 20, 80, 90);
@@ -113,20 +98,8 @@ public class oh_no_between_screens {
                frame_width,
                frame_height
             );
-         tics_of_event--;
-         if (cycle == 1) {
-            current_frame++;
-         } else {
-            current_frame--;
-         }
-
-         if (current_frame == count_of_frames && cycle == 1) {
-            cycle = 2;
-         }
-
-         if (current_frame == 1 && cycle == 2) {
-            cycle = 1;
-         }
+         // The frame counter is advanced once per client tick in client_net.clientTick; render2 only
+         // draws, so the animation runs at the same speed whether or not a GUI screen is open.
       }
    }
    }

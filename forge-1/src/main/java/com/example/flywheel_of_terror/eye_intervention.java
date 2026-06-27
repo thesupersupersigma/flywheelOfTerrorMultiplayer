@@ -33,13 +33,12 @@ public class eye_intervention {
    public static boolean event_in_process = false;
    public static float red_intense = 1.0F;
    public static boolean end_music = false;
-   public static boolean sound_must_be = false;
    public static Random random = new Random();
 
    public static void do_event(Player player) {
-      event_in_process = true;
       set_event_was(player, true);
-      sound_must_be = true;
+      Network.fx(player, Network.EYES);
+      Network.sound(player, (SoundEvent)register_sounds.some_eyes.get());
    }
 
    public static boolean get_event_was(Player player) {
@@ -107,30 +106,8 @@ public class eye_intervention {
       eye_states2.add(1);
    }
 
-   @SubscribeEvent
-   public static void add_eyes(PlayerTickEvent event) {
-      Player player = event.player;
-      boolean client = player.level().isClientSide();
-      if (event_in_process && tics_to_next_eye <= 0) {
-         tics_to_next_eye = constant_tics_to_next_eye;
-         current_count_of_eyes++;
-      }
-
-      if (end_music) {
-         information.do_a_silence(event.player);
-         end_music = false;
-      }
-
-      if (client && sound_must_be) {
-         sound_must_be = false;
-         player.playSound((SoundEvent)register_sounds.some_eyes.get(), 1.0F, 1.0F);
-      }
-   }
-
-   @SubscribeEvent
-   public static void decrease(ServerTickEvent event) {
-      tics_to_next_eye--;
-   }
+   // Phase 3: eye growth, the tic countdown and the end-of-event music stop now run on the client
+   // (see client_net.clientTick); the server only fires the EYES FxPacket + some_eyes sound.
 
    @EventBusSubscriber(value = {Dist.CLIENT})
    public static class client_events {

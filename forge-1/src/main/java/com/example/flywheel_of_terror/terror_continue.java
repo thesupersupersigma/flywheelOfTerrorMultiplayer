@@ -34,10 +34,8 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 )
 public class terror_continue {
    // Phase 2: per-player state ("need_try", "near_maze", "tics_cooldown") now lives in the player's
-   // NBT compound. The two sound flags stay static (cross-side A/V, deferred to Phase 3).
+   // NBT compound. Phase 3: the chest-close sound is sent as an S2C packet to the affected player.
    public static Random random = new Random();
-   public static boolean sound_must_be = false;
-   public static boolean sound_chest_must_be = false;
 
    public static boolean near_maze(Player player) {
       return state.getBool(player, "near_maze");
@@ -92,7 +90,7 @@ public class terror_continue {
                         return;
                      }
 
-                     sound_chest_must_be = true;
+                     Network.sound(player, SoundEvents.CHEST_CLOSE);
                      if (player.level() instanceof ServerLevel serv) {
                         BlockPos pos2 = new BlockPos(xxx - 20, yyy - 1, zzz - 20);
                         labyrinth_event.build(serv, pos2, "labyrinth_of_terror");
@@ -129,6 +127,7 @@ public class terror_continue {
       tag.putBoolean("intruder_was", true);
       true_me me = new true_me((EntityType<? extends PathfinderMob>)add_humans.true_me.get(), player.level());
       me.setPos(get_center_oh_house(player));
+      information.setTarget(me, player);
       player.level().addFreshEntity(me);
    }
 
@@ -229,16 +228,6 @@ public class terror_continue {
       CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
       Player player = event.player;
       boolean client = player.level().isClientSide();
-      if (sound_chest_must_be && client) {
-         player.playSound(SoundEvents.CHEST_CLOSE, 1.0F, 1.0F);
-         sound_chest_must_be = false;
-      }
-
-      if (sound_must_be && player.level().isClientSide()) {
-         player.playSound((SoundEvent)register_sounds.spawn.get(), 1.0F, 1.0F);
-         sound_must_be = false;
-      }
-
       // Cooldown is now server-authoritative (was decremented client-side via a shared static).
       if (!client && terror_beginning.away_house(player)) {
          tag.putInt("tics_cooldown", tag.getInt("tics_cooldown") - 1);

@@ -31,9 +31,8 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class horror_environment {
+   // Phase 3: the break_mob / dead sounds are now S2C packets to the affected player.
    public static Random random = new Random();
-   public static boolean sound_must_be = false;
-   public static boolean sound_must_be2 = false;
 
    @SubscribeEvent
    public static void true_me_spawn(EntityJoinLevelEvent event) {
@@ -43,22 +42,17 @@ public class horror_environment {
       }
 
       if (event.getEntity() instanceof somewho monster) {
-         monster.setTarget(information.just_player);
+         monster.setTarget(information.getTarget(monster));
       }
    }
 
    @SubscribeEvent
    public static void true_me_disappear(PlayerTickEvent event) {
       Player player = event.player;
-      if (player.level().isClientSide() && sound_must_be2) {
-         player.playSound((SoundEvent)register_sounds.dead.get(), 1.0F, 1.0F);
-         sound_must_be2 = false;
-      }
-
       if (!player.level().isClientSide()) {
          for (true_me me : player.level().getEntitiesOfClass(true_me.class, player.getBoundingBox().inflate(2.0))) {
             me.remove(RemovalReason.DISCARDED);
-            sound_must_be2 = true;
+            Network.sound(player, (SoundEvent)register_sounds.dead.get());
             MobEffectInstance blind = new MobEffectInstance(MobEffects.BLINDNESS, 80, 14, false, true, false);
             player.addEffect(blind);
          }
@@ -112,13 +106,13 @@ public class horror_environment {
          && !(event.getEntity() instanceof oh_no_here)
          && !(event.getEntity() instanceof oh_no_behind)
          && !(event.getEntity() instanceof true_me)) {
-         int bebra = random.nextInt(1, 200);
-         if (bebra >= 1 && bebra < 6) {
+         int roll = random.nextInt(1, 200);
+         if (roll >= 1 && roll < 6) {
             tag.putInt("lookatplayer", 5);
          }
 
-         if (bebra > 6
-            && bebra < 11
+         if (roll > 6
+            && roll < 11
             && !(event.getEntity() instanceof terror_pig)
             && !(event.getEntity() instanceof terror_cow)
             && !(event.getEntity() instanceof terror_sheep)
@@ -126,34 +120,34 @@ public class horror_environment {
             tag.putInt("god", 5);
          }
 
-         if (bebra == 11 && (event.getEntity() instanceof Pig || event.getEntity() instanceof Cow || event.getEntity() instanceof Sheep)) {
+         if (roll == 11 && (event.getEntity() instanceof Pig || event.getEntity() instanceof Cow || event.getEntity() instanceof Sheep)) {
             tag.putInt("terror", 5);
             tag.putInt("lookatplayer", 0);
          }
 
-         if (bebra > 11 && bebra < 17) {
+         if (roll > 11 && roll < 17) {
             tag.putInt("coward", 5);
          }
 
-         if (bebra > 17 && bebra < 23) {
+         if (roll > 17 && roll < 23) {
             tag.putInt("fake", 5);
             tag.putInt("terror", 0);
          }
 
-         if (bebra > 23 && bebra < 30) {
+         if (roll > 23 && roll < 30) {
             tag.putInt("smart", 5);
             tag.putInt("lookatplayer", 0);
          }
 
-         if (bebra > 30 && bebra < 37) {
+         if (roll > 30 && roll < 37) {
             tag.putInt("wrong_reaction", 5);
          }
 
-         if (bebra > 37 && bebra < 43) {
+         if (roll > 37 && roll < 43) {
             tag.putInt("uroboros", 5);
          }
 
-         if (bebra > 43 && bebra < 49) {
+         if (roll > 43 && roll < 49) {
             tag.putInt("scarecrow", 10);
          }
       }
@@ -193,7 +187,7 @@ public class horror_environment {
             MobEffectInstance blind = new MobEffectInstance(MobEffects.BLINDNESS, 140, 10, false, true, false);
             player.addEffect(blind);
             if (tag.getInt("lookatplayer") != 5) {
-               sound_must_be = true;
+               Network.sound(player, (SoundEvent)register_sounds.break_mob.get());
                player.hurt(player.damageSources().generic(), random.nextFloat(2.0F, 8.0F));
                double mobx = event.getEntity().getX();
                double moby = event.getEntity().getY();
@@ -253,11 +247,6 @@ public class horror_environment {
       Player player = event.player;
       CompoundTag global_tag2 = player.getPersistentData();
       CompoundTag tag2 = global_tag2.getCompound("flywheel_of_terror");
-      if (sound_must_be && player.level().isClientSide) {
-         player.playSound((SoundEvent)register_sounds.break_mob.get(), 1.0F, 1.0F);
-         sound_must_be = false;
-      }
-
       if (!player.level().isClientSide()) {
          for (Entity mob : player.level().getEntitiesOfClass(Entity.class, player.getBoundingBox().inflate(300.0))) {
             CompoundTag tag = mob.getPersistentData();
@@ -287,15 +276,15 @@ public class horror_environment {
                   }
                }
 
-               if (tagx.getInt("smart") == 5 && information.just_player != null) {
-                  mob.getNavigation().moveTo(information.just_player, 1.0);
+               if (tagx.getInt("smart") == 5) {
+                  mob.getNavigation().moveTo(player, 1.0);
                }
             }
 
             for (Animal mob : player.level().getEntitiesOfClass(Animal.class, player.getBoundingBox().inflate(8.0))) {
                CompoundTag tagxx = mob.getPersistentData();
                if (tagxx.getInt("coward") == 5) {
-                  mob.setLastHurtByMob(information.livingingrok);
+                  mob.setLastHurtByMob(player);
                }
             }
 

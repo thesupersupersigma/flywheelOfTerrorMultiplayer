@@ -56,8 +56,12 @@ public class fake_steve extends PathfinderMob {
 
    public void tick() {
       super.tick();
-      if (!this.level().isClientSide() && information.just_player != null) {
-         this.lookAt(Anchor.EYES, information.just_player.getEyePosition());
+      if (!this.level().isClientSide()) {
+         Player player = information.getTarget(this);
+         if (player != null) {
+            this.lookAt(Anchor.EYES, player.getEyePosition());
+         }
+
          this.tics_of_live--;
          if (this.tics_of_live <= 0) {
             this.remove(RemovalReason.DISCARDED);

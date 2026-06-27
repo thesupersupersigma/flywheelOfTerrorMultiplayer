@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import com.example.flywheel_of_terror.client.client_safe;
 import net.minecraft.client.gui.screens.inventory.CraftingScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.core.BlockPos;
@@ -17,7 +16,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -33,30 +31,63 @@ import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
+/**
+ * Stateless helper class. Phase 4 removed every {@code public static} mutable field that used to
+ * live here — the old global "current player" singleton ({@code just_player}/{@code igrok}/
+ * {@code livingingrok}/{@code playeruuid}), the block-under-player / day-time caches, the somewho
+ * drop relay, and the shared head ItemStack. Each custom mob now stores its own target player as a
+ * UUID in its persistent NBT (see {@link #setTarget}/{@link #getTarget}); per-player gameplay state
+ * lives in each player's {@code "flywheel_of_terror"} NBT compound (see {@link state}). What remains
+ * here is purely stateless utility methods plus client-only GUI bookkeeping in {@link client_events}.
+ */
 @EventBusSubscriber
 public class information {
-   public static Block block_under_player;
-   public static long time;
-   public static Player just_player;
-   public static Entity igrok;
-   public static LivingEntity livingingrok;
-   public static ItemStack last_dropped;
-   public static boolean somewho_dropped = true;
-   // current_screen is client-only state (the open GUI). Typed Object so this common class — which is
-   // registered on the FORGE bus and therefore loaded on a dedicated server — does not reference the
-   // client-only net.minecraft.client.gui.screens.Screen class. The inventory_open/crafting_open flags
-   // below let server-side schedulers test "which GUI is open" without referencing a Screen subclass.
-   public static Object current_screen;
-   public static boolean inventory_open = false;
-   public static boolean crafting_open = false;
-   public static ItemStack head = new ItemStack(Items.PLAYER_HEAD);
-   public static UUID playeruuid;
-   public static boolean show_model = true;
-   public static Random random = new Random();
    public static final String play_time_nbt = "play_time";
+   /** NBT key under which a custom mob records the UUID of the player it is haunting. */
+   public static final String target_nbt = "fot_target";
+
+   /** Record {@code player} as this mob's target by storing the player's UUID in the mob's NBT. */
+   public static void setTarget(Entity mob, Player player) {
+      if (player != null) {
+         mob.getPersistentData().putUUID(target_nbt, player.getUUID());
+      }
+   }
+
+   /**
+    * Resolve this mob's target player. Returns the player whose UUID was stored at spawn if they
+    * are present and alive; otherwise falls back to the nearest player so a mob spawned without an
+    * explicit target (e.g. a randomly-replaced animal) still behaves.
+    */
+   public static Player getTarget(Entity mob) {
+      CompoundTag tag = mob.getPersistentData();
+      if (tag.hasUUID(target_nbt)) {
+         Player player = mob.level().getPlayerByUUID(tag.getUUID(target_nbt));
+         if (player != null && player.isAlive()) {
+            return player;
+         }
+      }
+
+      return mob.level().getNearestPlayer(mob, 500.0);
+   }
+
+   /** Block directly beneath the player (replaces the old cached {@code block_under_player} static). */
+   public static Block block_under(Player player) {
+      BlockPos pos = new BlockPos((int)player.getX(), (int)player.getY() - 1, (int)player.getZ());
+      return player.level().getBlockState(pos).getBlock();
+   }
+
+   /** A player-head ItemStack skinned to {@code player} (replaces the old shared {@code head} static). */
+   public static ItemStack headFor(Player player) {
+      ItemStack head = new ItemStack(Items.PLAYER_HEAD);
+      CompoundTag tag = head.getOrCreateTag();
+      CompoundTag owner = new CompoundTag();
+      owner.putString("Name", "killer");
+      owner.putUUID("Id", player.getUUID());
+      tag.put("SkullOwner", owner);
+      return head;
+   }
 
    @SubscribeEvent
    public static void return_to_normal(PlayerLoggedInEvent event) {
@@ -64,7 +95,7 @@ public class information {
       CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
       if (tag.getBoolean("first_was") && tag.getDouble("sens") != 0.0) {
          double sens = tag.getDouble("sens");
-         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> client_safe.restoreSensitivity(sens));
+         Network.fx(event.getEntity(), Network.RESTORE_SENS, (float)sens);
          tag.putBoolean("first_was", true);
          global_tag.put("flywheel_of_terror", tag);
       }
@@ -74,23 +105,37 @@ public class information {
 
    @EventBusSubscriber(value = {Dist.CLIENT})
    public static class client_events {
+      /** Client-local: whether the inventory player model should render (set randomly on open). */
+      public static boolean show_model = true;
+      private static final Random random = new Random();
+      // Last GUI state reported to the server, so we only send a C2S ScreenStatePacket when it
+      // actually changes instead of every render frame.
+      private static boolean last_inv = false;
+      private static boolean last_craft = false;
+
+      private static void report(boolean inv, boolean craft) {
+         if (inv != last_inv || craft != last_craft) {
+            last_inv = inv;
+            last_craft = craft;
+            Network.sendScreenState(inv, craft);
+         }
+      }
+
       @SubscribeEvent(
          priority = EventPriority.LOWEST
       )
       public static void onRenderHud(Post event) {
-         current_screen = event.getScreen();
-         inventory_open = event.getScreen() instanceof InventoryScreen;
-         crafting_open = event.getScreen() instanceof CraftingScreen;
+         boolean inventory_open = event.getScreen() instanceof InventoryScreen;
+         boolean crafting_open = event.getScreen() instanceof CraftingScreen;
+         report(inventory_open, crafting_open);
       }
 
       @SubscribeEvent(
          priority = EventPriority.LOWEST
       )
       public static void close(Closing event) {
-         current_screen = null;
-         inventory_open = false;
-         crafting_open = false;
          show_model = true;
+         report(false, false);
       }
 
       @SubscribeEvent(
@@ -123,8 +168,12 @@ public class information {
    @SubscribeEvent
    public static void last_drop(ItemTossEvent event) {
       Player player = event.getPlayer();
-      last_dropped = event.getEntity().getItem();
-      somewho_dropped = false;
+      CompoundTag tag = state.tag(player);
+      CompoundTag item = new CompoundTag();
+      event.getEntity().getItem().save(item);
+      tag.put("somewho_drop", item);
+      tag.putBoolean("somewho_dropped", false);
+      state.save(player, tag);
    }
 
    public static String getCoordinates(double x, double y, double z) {
@@ -218,25 +267,8 @@ public class information {
    @SubscribeEvent
    public static void check_state(PlayerTickEvent event) {
       Player player = event.player;
-      if (!player.level().isClientSide()) {
-         BlockPos pos = new BlockPos((int)player.getX(), (int)player.getY() - 1, (int)player.getZ());
-         block_under_player = player.level().getBlockState(pos).getBlock();
-         igrok = player;
-         livingingrok = player;
-         just_player = player;
-         playeruuid = igrok.getUUID();
-         CompoundTag tag = head.getOrCreateTag();
-         CompoundTag owner = new CompoundTag();
-         owner.putString("Name", "killer");
-         owner.putUUID("Id", playeruuid);
-         tag.put("SkullOwner", owner);
-         if (player.level() instanceof ServerLevel serv) {
-            time = serv.getDayTime();
-         }
-
-         if (player.tickCount % 40 == 0) {
-            set_play_time(player, get_play_time(player) + 1);
-         }
+      if (!player.level().isClientSide() && player.tickCount % 40 == 0) {
+         set_play_time(player, get_play_time(player) + 1);
       }
    }
 }

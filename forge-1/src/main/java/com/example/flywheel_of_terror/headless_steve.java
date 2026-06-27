@@ -48,15 +48,18 @@ public class headless_steve extends PathfinderMob {
 
    public void tick() {
       super.tick();
-      this.setItemInHand(InteractionHand.MAIN_HAND, information.head);
-      this.setItemInHand(InteractionHand.OFF_HAND, information.head);
-      if (information.just_player != null) {
-         this.lookAt(Anchor.EYES, information.just_player.getEyePosition());
-         this.getNavigation().moveTo(information.igrok, 0.8);
-      }
+      if (!this.level().isClientSide()) {
+         Player player = information.getTarget(this);
+         if (player != null) {
+            this.setItemInHand(InteractionHand.MAIN_HAND, information.headFor(player));
+            this.setItemInHand(InteractionHand.OFF_HAND, information.headFor(player));
+            this.lookAt(Anchor.EYES, player.getEyePosition());
+            this.getNavigation().moveTo(player, 0.8);
+         }
 
-      if (apocalypsis_event.tics_of_event < 0 && !this.level().isClientSide()) {
-         this.remove(RemovalReason.DISCARDED);
+         if (apocalypsis_event.tics_of_event < 0) {
+            this.remove(RemovalReason.DISCARDED);
+         }
       }
    }
 }

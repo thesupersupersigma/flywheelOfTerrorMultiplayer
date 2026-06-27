@@ -22,7 +22,6 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderGuiEvent.Post;
 import net.minecraftforge.client.event.sound.PlaySoundEvent;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
-import net.minecraftforge.event.TickEvent.ServerTickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
@@ -33,16 +32,14 @@ import net.minecraftforge.event.level.BlockEvent.BreakEvent;
 import net.minecraftforge.event.level.BlockEvent.EntityPlaceEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import com.example.flywheel_of_terror.client.client_safe;
 
 @EventBusSubscriber
 public class paranoia {
    public static Random random = new Random();
-   // Cross-side A/V flags + per-client timers (still static — Phase 3 networking territory).
-   public static boolean steps_must_be = false;
-   public static boolean force_open_door_must_be = false;
+   // Phase 3: the steps / force-open / lost-call cues are now S2C PlaySoundPackets. tics_of_call +
+   // current_call (the incoming-call image) are set + ticked on the client via the CALL FxPacket;
+   // tics_of_steps / seconds_to_undefined_noise stay client-local (ambient noise, one local player).
    public static int min_time = 300;
    public static int max_time = 600;
    public static int ii = 6;
@@ -51,7 +48,6 @@ public class paranoia {
    public static int tics_from_last_event = 0;
    public static int seconds_to_undefined_noise = -random.nextInt(700, 1400);
    public static int tics_of_steps = -1;
-   public static boolean call_sound_must_be = false;
    public static final String seconds_to_call_nbt = "second_to_call";
 
    // Phase 2: the master scheduler's per-player timers/flags now live in the player's NBT
@@ -129,31 +125,17 @@ public class paranoia {
       }
    }
 
-   @SubscribeEvent
-   public static void serv(ServerTickEvent event) {
-      tics_of_call--;
-   }
-
    public static void do_a_call(Player player) {
-      tics_of_call = 60;
       double x = player.getX() + (double)random.nextFloat(-80.0F, 80.0F);
       double z = player.getZ() + (double)random.nextFloat(-80.0F, 80.0F);
       int y = player.level().getHeight(Types.WORLD_SURFACE, (int)x, (int)z) + 1;
       player.teleportTo(x, (double)y, z);
-      call_sound_must_be = true;
       set_seconds_to_call(player, 300);
-      current_call = random.nextInt(1, 4);
-      DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> client_safe.paranoiaClearChat());
-   }
-
-   @SubscribeEvent
-   public static void sounds(PlayerTickEvent event) {
-      Player player = event.player;
-      boolean client = player.level().isClientSide();
-      if (call_sound_must_be && client) {
-         player.playSound((SoundEvent)register_sounds.lost_call.get(), 1.0F, 1.0F);
-         call_sound_must_be = false;
-      }
+      // The incoming-call image (tics_of_call + current_call) is set + ticked on the client via the
+      // CALL FxPacket; the "lost call" sound and the chat-clear are S2C packets to this player only.
+      Network.fx(player, Network.CALL, random.nextInt(1, 4));
+      Network.sound(player, (SoundEvent)register_sounds.lost_call.get());
+      Network.fx(player, Network.CLEAR_CHAT);
    }
 
    public static void set_seconds_to_call(Player player, int seconds) {
@@ -187,8 +169,8 @@ public class paranoia {
    public static void pkm(RightClickBlock event) {
       Player player = event.getEntity();
       BlockState block = player.level().getBlockState(event.getPos());
-      if (block.getBlock() instanceof DoorBlock && random.nextInt(1, 100) == 22) {
-         force_open_door_must_be = true;
+      if (!player.level().isClientSide() && block.getBlock() instanceof DoorBlock && random.nextInt(1, 100) == 22) {
+         Network.sound(player, (SoundEvent)register_sounds.force_open.get());
       }
    }
 
@@ -205,8 +187,8 @@ public class paranoia {
    public static void start_break(BreakSpeed event) {
       Player player = event.getEntity();
       int tics = state.getInt(player, "para_break_tics") - 1;
-      if (random.nextInt(1, 10000) == 1 && tics <= 0) {
-         steps_must_be = true;
+      if (!player.level().isClientSide() && random.nextInt(1, 10000) == 1 && tics <= 0) {
+         Network.sound(player, (SoundEvent)register_sounds.steps1.get());
          tics = 10000;
       }
 
@@ -258,16 +240,6 @@ public class paranoia {
       int tics_without_events = tag.getInt("tics_without_events");
       if (client) {
          tics_from_last_event--;
-
-         if (force_open_door_must_be) {
-            force_open_door_must_be = false;
-            player.playSound((SoundEvent)register_sounds.force_open.get(), 1.0F, 1.0F);
-         }
-
-         if (steps_must_be) {
-            player.playSound((SoundEvent)register_sounds.steps1.get(), 1.0F, 1.0F);
-            steps_must_be = false;
-         }
       } else {
          tics_without_events--;
          if (player.tickCount % 40 == 0 && terror_beginning.away_house(player) && !labyrinth_event.in_lab(player) && !terror_beginning.his_hunt(player)) {
@@ -289,7 +261,6 @@ public class paranoia {
             case 1:
                if (tag.getInt("tool_break") < 1) {
                   tool_break.set_active(player, true);
-                  System.out.println("must be event");
                   tag.putInt("tool_break", tag.getInt("tool_break") + 1);
                   time_to_event = random.nextInt(min_time, max_time);
                   tics_from_last_event = 3000;
@@ -297,8 +268,7 @@ public class paranoia {
                break;
             case 2:
                if (tag.getInt("sound_heart") < 1) {
-                  sound_heart.event_in_process = true;
-                  System.out.println("must be event");
+                  sound_heart.play(player);
                   tag.putInt("sound_heart", tag.getInt("sound_hearts") + 2);
                   time_to_event = random.nextInt(min_time, max_time);
                   tics_from_last_event = 3000;
@@ -306,7 +276,7 @@ public class paranoia {
                break;
             case 3:
                if (tag.getInt("sound_knife_attack") < 1) {
-                  sound_knife_attack.event_in_process = true;
+                  sound_knife_attack.play(player);
                   tag.putInt("sound_knife_attack", tag.getInt("sound_knife_attack") + 2);
                   time_to_event = random.nextInt(min_time, max_time);
                   tics_from_last_event = 3000;
@@ -315,7 +285,6 @@ public class paranoia {
             case 4:
                if (tag.getInt("circle_christ") < 1) {
                   circle_christ.set_active(player, true);
-                  System.out.println("must be event");
                   tag.putInt("circle_christ", tag.getInt("circle_christ") + 1);
                   time_to_event = random.nextInt(min_time, max_time);
                   tics_from_last_event = 3000;
@@ -324,7 +293,6 @@ public class paranoia {
             case 5:
                if (tag.getInt("fire_steps") < 1) {
                   fire_steps.set_tics(player, random.nextInt(300, 500));
-                  System.out.println("must be event");
                   tag.putInt("fire_steps", tag.getInt("fire_steps") + 1);
                   time_to_event = random.nextInt(min_time, max_time);
                   tics_from_last_event = 3000;
@@ -340,6 +308,7 @@ public class paranoia {
                   player.getX() - player.getLookAngle().x * 10.0, player.getY(), player.getZ() - player.getLookAngle().z * 10.0
                );
                copy.setPos(pos);
+               information.setTarget(copy, player);
                player.level().addFreshEntity(copy);
 
                for (double xxx = pos.x() - 1.0; xxx <= pos.x + 1.0; xxx++) {
@@ -451,7 +420,6 @@ public class paranoia {
                break;
             case 19:
                if (!tag.getBoolean("angel_sound")) {
-                  System.out.println("angel");
                   angel_sound_event.set_active(player, true);
                   time_to_event = random.nextInt(min_time, max_time);
                   tag.putBoolean("angel_sound", true);
@@ -469,7 +437,6 @@ public class paranoia {
                break;
             case 21:
                if (!tag.getBoolean("exist_terror")) {
-                  System.out.println("exist");
                   exist_terror_event.set_active(player, true);
                   time_to_event = random.nextInt(min_time, max_time);
                   tag.putBoolean("exist_terror", true);
@@ -479,7 +446,6 @@ public class paranoia {
                break;
             case 22:
                if (!tag.getBoolean("below")) {
-                  System.out.println("below");
                   below_event.set_active(player, true);
                   time_to_event = random.nextInt(min_time, max_time);
                   global_tag.put("flywheel_of_terror", tag);
@@ -520,10 +486,13 @@ public class paranoia {
          ii++;
       }
 
-      if (random.nextInt(1, 400) == 54
+      // Whether a GUI is open is reported by the client via the C2S ScreenStatePacket (Phase 3) and
+      // stored per-player, so this server-side scheduler no longer reads a client-only static.
+      if (!client
+         && random.nextInt(1, 400) == 54
          && player.tickCount % 40 == 0
-         && (information.inventory_open || information.crafting_open)) {
-         player.playSound((SoundEvent)register_sounds.breath1.get(), 1.0F, 1.0F);
+         && (state.getBool(player, "inv_open") || state.getBool(player, "crafting_open"))) {
+         Network.sound(player, (SoundEvent)register_sounds.breath1.get());
       }
 
       if (!client && tag.getBoolean("para_sleep")) {
@@ -535,7 +504,7 @@ public class paranoia {
                      BlockPos pos = new BlockPos((int)x, (int)y, (int)z);
                      if (player.level().getBlockState(pos).getBlock() instanceof DoorBlock) {
                         player.level().destroyBlock(pos, true, player);
-                        force_open_door_must_be = true;
+                        Network.sound(player, (SoundEvent)register_sounds.force_open.get());
                      }
                   }
                }

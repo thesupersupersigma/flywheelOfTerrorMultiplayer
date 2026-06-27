@@ -24,8 +24,9 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class thunder_behind {
-   // event_in_process → per-player NBT ("thunder_behind_active"); the punch/madness timers stay
-   // static (client-side "turn around" A/V, Phase 3).
+   // event_in_process → per-player NBT ("thunder_behind_active"). Phase 3: tics_to_punch /
+   // tics_of_madness (the "turn around" madness shader + big_glitch sound) are set + ticked on the
+   // client via the THUNDER_PUNCH FxPacket (see client_net.clientTick).
    public static Random random = new Random();
    public static int tics_to_punch = -10;
    public static int tics_of_madness = 0;
@@ -49,11 +50,11 @@ public class thunder_behind {
       CompoundTag global_tag = event.getEntity().getPersistentData();
       CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
       String coordinates1 = event.getPos().getX() + "," + event.getPos().getY() + "," + event.getPos().getZ();
-      if (tag.getBoolean(coordinates1 + "around")) {
+      if (!event.getLevel().isClientSide() && tag.getBoolean(coordinates1 + "around")) {
          Player player = event.getEntity();
          tag.putBoolean(coordinates1 + "around", false);
          global_tag.put("flywheel_of_terror", tag);
-         tics_to_punch = 220;
+         Network.fx(player, Network.THUNDER_PUNCH, 220);
       }
    }
 
@@ -62,16 +63,8 @@ public class thunder_behind {
       Player player = event.player;
       CompoundTag global_tag = event.player.getPersistentData();
       CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
-      if (player.level().isClientSide()) {
-         tics_to_punch--;
-         tics_of_madness--;
-      }
-
-      if (tics_to_punch == 0 && player.level().isClientSide()) {
-         tics_of_madness = 40;
-         player.playSound((SoundEvent)register_sounds.big_glitch.get(), 1.0F, 1.0F);
-      }
-
+      // tics_to_punch / tics_of_madness + the big_glitch "turn around" sound now run client-side
+      // (see client_net.clientTick), triggered by the THUNDER_PUNCH FxPacket.
       if (state.getBool(player, "thunder_behind_active") && !player.level().isClientSide()) {
          double xx = player.getLookAngle().x;
          double zz = player.getLookAngle().z;

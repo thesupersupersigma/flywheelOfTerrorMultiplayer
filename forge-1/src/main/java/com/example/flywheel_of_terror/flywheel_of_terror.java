@@ -2,14 +2,12 @@ package com.example.flywheel_of_terror;
 
 import java.util.Random;
 import net.minecraft.core.BlockPos;
-import net.minecraft.client.sounds.SoundEngine;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.sound.SoundEngineLoadEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
@@ -21,8 +19,6 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import org.spongepowered.asm.mixin.MixinEnvironment;
-import org.spongepowered.asm.mixin.MixinEnvironment.Side;
 
 @Mod("flywheel_of_terror")
 public class flywheel_of_terror {
@@ -37,8 +33,7 @@ public class flywheel_of_terror {
       register_sounds.SOUND_EVENTS.register(ModEventBus);
       add_humans.add_human_zombie.register(ModEventBus);
       ModEventBus.addListener(this::registerAttributes);
-      MixinEnvironment.getDefaultEnvironment().setSide(Side.CLIENT);
-      MixinEnvironment.getDefaultEnvironment().setSide(Side.SERVER);
+      Network.register();
    }
 
    private void registerAttributes(EntityAttributeCreationEvent event) {
@@ -84,16 +79,6 @@ public class flywheel_of_terror {
             BlockPos bed = house_defend.bed_pos(player);
             player.teleportTo((double)bed.getX(), (double)bed.getY(), (double)bed.getZ());
          }
-      }
-   }
-
-   @SubscribeEvent
-   public static void onSoundEngineLoad(SoundEngineLoadEvent event) {
-      try {
-         SoundEngine soundEngine = event.getEngine();
-         System.out.println("[NoMusic] Звуковой движок загружен");
-      } catch (Exception var2) {
-         System.err.println("[NoMusic] Ошибка при загрузке звукового движка: " + var2.getMessage());
       }
    }
 

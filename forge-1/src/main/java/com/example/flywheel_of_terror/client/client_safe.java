@@ -20,9 +20,10 @@ import net.minecraftforge.api.distmarker.OnlyIn;
  * {@link net.minecraftforge.fml.DistExecutor#unsafeRunWhenOn(Dist, java.util.function.Supplier)}
  * with {@link Dist#CLIENT}, so a dedicated server never loads this class (or {@code Minecraft}).
  *
- * <p>Behaviour on a physical client (including the integrated single-player server, which runs on
- * the CLIENT dist) is identical to the original; on a dedicated server the client half is simply
- * skipped. Phase 3 will replace this with real S2C packets.
+ * <p>As of Phase 3 these methods are driven by S2C packets through {@link client_net}: the server
+ * decides an effect should happen for a particular player and sends a packet, and the receiving
+ * client runs the matching method here. (A handful are still reached directly via
+ * {@code DistExecutor} from client-only contexts.) A dedicated server never loads this class.
  */
 @OnlyIn(Dist.CLIENT)
 public final class client_safe {

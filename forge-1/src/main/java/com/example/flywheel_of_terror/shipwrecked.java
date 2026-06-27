@@ -19,10 +19,11 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class shipwrecked {
+   // red_water is read by the client render handler below; on a dedicated server it is now set there
+   // by an S2C FxPacket (Phase 3) rather than shared in-JVM with the server thread.
    public static boolean red_water = false;
    public static final String shipwrecked_nbt = "shipwrecked_was";
    public static final String may_drown_nbt = "may_drown";
-   public static boolean sound_must_be = false;
 
    public static boolean get_may_drown_player(Player player) {
       CompoundTag global_tag = player.getPersistentData();
@@ -80,19 +81,14 @@ public class shipwrecked {
       state.putInt(player, "time_to_event", state.getInt(player, "time_to_event") + 300);
       set_may_drown_player(player, true);
       set_shipwrecked(player, true);
-      red_water = true;
-      sound_must_be = true;
+      Network.fx(player, Network.RED_WATER_ON);
+      Network.sound(player, (SoundEvent)register_sounds.shipwrecked.get());
    }
 
    @SubscribeEvent
    public static void do_event(PlayerTickEvent event) {
       Player player = event.player;
-      if (player.level().isClientSide()) {
-         if (sound_must_be) {
-            sound_must_be = false;
-            player.playSound((SoundEvent)register_sounds.shipwrecked.get(), 1.0F, 1.0F);
-         }
-      } else {
+      if (!player.level().isClientSide()) {
          if (may_shipwrecked(player, 10)) {
             event.player.displayClientMessage(Component.literal("Get back to land immediately"), true);
          }
@@ -114,7 +110,7 @@ public class shipwrecked {
    @SubscribeEvent
    public static void return_normal(LivingDeathEvent event) {
       if (event.getEntity() instanceof Player player && get_shipwrecked(player)) {
-         red_water = false;
+         Network.fx(player, Network.RED_WATER_OFF);
          set_may_drown_player(player, false);
          information.do_a_silence(player);
       }

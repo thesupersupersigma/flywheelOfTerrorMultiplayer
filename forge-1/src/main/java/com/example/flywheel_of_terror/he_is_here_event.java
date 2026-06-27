@@ -1,6 +1,5 @@
 package com.example.flywheel_of_terror;
 
-import com.example.flywheel_of_terror.client.client_safe;
 import java.util.Iterator;
 import java.util.List;
 import net.minecraft.nbt.CompoundTag;
@@ -14,8 +13,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
@@ -66,7 +63,7 @@ public class he_is_here_event {
    public static void do_event(Player player) {
       player.sendSystemMessage(Component.literal("hello"));
       set_tics_to_event(player, 200);
-      DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> client_safe.heIsHereRenderDistance());
+      Network.fx(player, Network.HE_IS_HERE_DIST);
    }
 
    public static void do_event2(Player player) {
@@ -89,8 +86,8 @@ public class he_is_here_event {
    }
 
    public static int get_distance_to_oh_no(Player player) {
-      List<oh_no_here> bebra = player.level().getEntitiesOfClass(oh_no_here.class, player.getBoundingBox().inflate(400.0));
-      Iterator var2 = bebra.iterator();
+      List<oh_no_here> stalkers = player.level().getEntitiesOfClass(oh_no_here.class, player.getBoundingBox().inflate(400.0));
+      Iterator var2 = stalkers.iterator();
       if (var2.hasNext()) {
          oh_no_here he = (oh_no_here)var2.next();
          return (int)player.distanceTo(he);

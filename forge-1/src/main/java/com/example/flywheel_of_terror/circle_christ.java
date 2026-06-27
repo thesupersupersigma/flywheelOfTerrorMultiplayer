@@ -18,10 +18,7 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
    bus = Bus.FORGE
 )
 public class circle_christ {
-   // event_in_process → per-player NBT ("circle_christ_active"); sound flags stay static (Phase 3).
-   public static boolean sound_must_be = false;
-   public static boolean sound_must_be2 = false;
-
+   // event_in_process → per-player NBT ("circle_christ_active"); the two sounds are now S2C packets.
    public static void set_active(Player player, boolean value) {
       state.putBool(player, "circle_christ_active", value);
    }
@@ -36,7 +33,7 @@ public class circle_christ {
          event.setCanceled(true);
          MobEffectInstance blind = new MobEffectInstance(MobEffects.BLINDNESS, 100, 10, false, true, false);
          player.addEffect(blind);
-         sound_must_be2 = true;
+         Network.sound(player, (SoundEvent)register_sounds.break_christ.get());
 
          for (double x = (double)(fixedX - 15); x <= (double)(fixedX + 15); x++) {
             for (double y = (double)(fixedY - 10); y <= (double)(fixedY + 10); y++) {
@@ -54,11 +51,6 @@ public class circle_christ {
    @SubscribeEvent
    public static void everytime(PlayerTickEvent event) {
       Player player = event.player;
-      if (sound_must_be2 && player.level().isClientSide()) {
-         player.playSound((SoundEvent)register_sounds.break_christ.get(), 1.0F, 1.0F);
-         sound_must_be2 = false;
-      }
-
       if (state.getBool(player, "circle_christ_active") && !player.level().isClientSide() && !terror_continue.near_maze(player)) {
          int fixedX = (int)player.getX();
          int fixedY = (int)player.getY();
@@ -123,12 +115,7 @@ public class circle_christ {
          player.level().setBlock(pos23, Blocks.NETHERITE_BLOCK.defaultBlockState(), 3);
          player.level().setBlock(pos24, Blocks.NETHERITE_BLOCK.defaultBlockState(), 3);
          state.putBool(player, "circle_christ_active", false);
-         sound_must_be = true;
-      }
-
-      if (sound_must_be && player.level().isClientSide()) {
-         player.playSound((SoundEvent)register_sounds.christ_spawn.get(), 1.0F, 1.0F);
-         sound_must_be = false;
+         Network.sound(player, (SoundEvent)register_sounds.christ_spawn.get());
       }
    }
 }

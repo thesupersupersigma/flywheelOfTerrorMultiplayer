@@ -1,6 +1,5 @@
 package com.example.flywheel_of_terror;
 
-import com.example.flywheel_of_terror.client.client_safe;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
@@ -8,8 +7,6 @@ import net.minecraftforge.event.TickEvent.Phase;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
@@ -29,7 +26,7 @@ public class fake_darknet_access {
    }
 
    public static void do_event(Player player) {
-      DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> client_safe.darknetScreenshot());
+      Network.fx(player, Network.SCREENSHOT);
       state.putInt(player, "darknet_tics", 200);
       CompoundTag global_tag = player.getPersistentData();
       CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
@@ -43,7 +40,6 @@ public class fake_darknet_access {
       if (!client && event.phase == Phase.START) {
          int tics_to_error = state.getInt(player, "darknet_tics") - 1;
          state.putInt(player, "darknet_tics", tics_to_error);
-         System.out.println(tics_to_error);
 
          if (tics_to_error == 1) {
             String text = "§caccess to http://flywheel_of_terror/" + information.get_name_of_the_player(player) + "/evidence.onion failed after 40 retries";

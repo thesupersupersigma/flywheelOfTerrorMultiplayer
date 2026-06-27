@@ -2,31 +2,17 @@ package com.example.flywheel_of_terror;
 
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.event.TickEvent.PlayerTickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 
-@EventBusSubscriber(
-   modid = "flywheel_of_terror",
-   bus = Bus.FORGE
-)
-public class sound_heart {
-   public static boolean event_in_process = false;
-   public static int to_reload_event = 0;
+/**
+ * Phase 3: the heartbeat cue is no longer a cross-side static flag read on the client tick. The
+ * server scheduler calls {@link #play(Player)} for the affected player, which sends a single S2C
+ * sound packet to that one player's client.
+ */
+public final class sound_heart {
+   private sound_heart() {
+   }
 
-   @SubscribeEvent
-   public static void everytime(PlayerTickEvent event) {
-      Player player = event.player;
-      if (player.tickCount % 80 == 0) {
-         to_reload_event--;
-      }
-
-      if (event_in_process && player.level().isClientSide() && to_reload_event <= 20) {
-         to_reload_event = 20;
-         System.out.println("heart attack");
-         event.player.playSound((SoundEvent)register_sounds.heart_attack.get(), 8.0F, 1.0F);
-         event_in_process = false;
-      }
+   public static void play(Player player) {
+      Network.sound(player, (SoundEvent)register_sounds.heart_attack.get(), 8.0F, 1.0F);
    }
 }

@@ -1,6 +1,5 @@
 package com.example.flywheel_of_terror.client.renderer;
 
-import com.example.flywheel_of_terror.information;
 import com.example.flywheel_of_terror.somewho;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
@@ -23,8 +22,8 @@ public class somewho_renderer extends HumanoidMobRenderer<somewho, PlayerModel<s
    }
 
    public ResourceLocation getTextureLocation(somewho entity) {
-      return information.igrok != null
-         ? Minecraft.getInstance().getConnection().getPlayerInfo(information.igrok.getUUID()).getSkinLocation()
+      return Minecraft.getInstance().player != null
+         ? Minecraft.getInstance().getConnection().getPlayerInfo(Minecraft.getInstance().player.getUUID()).getSkinLocation()
          : new ResourceLocation("textures/entity/steve.png");
    }
 }

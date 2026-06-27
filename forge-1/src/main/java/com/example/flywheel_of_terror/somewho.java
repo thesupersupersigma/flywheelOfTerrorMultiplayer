@@ -58,25 +58,30 @@ public class somewho extends PathfinderMob {
 
    public void tick() {
       super.tick();
-      if (this.tickCount % 500 == 0 && information.livingingrok != null) {
-         this.setTarget(information.livingingrok);
+      if (this.level().isClientSide()) {
+         return;
       }
 
-      if (information.just_player != null) {
-         ItemStack tool = information.just_player.getMainHandItem();
-         this.setItemInHand(InteractionHand.MAIN_HAND, tool);
-         ItemStack tool2 = information.just_player.getOffhandItem();
-         this.setItemInHand(InteractionHand.OFF_HAND, tool2);
-         if (!information.somewho_dropped && !this.level().isClientSide()) {
-            information.somewho_dropped = true;
-            this.dropItem(information.last_dropped);
-         }
-
-         if (information.just_player != null) {
-            Player player = information.just_player;
-            this.lookAt(Anchor.EYES, player.getEyePosition());
-            this.getNavigation().moveTo(information.igrok, 0.2);
-         }
+      Player player = information.getTarget(this);
+      if (player == null) {
+         return;
       }
+
+      if (this.tickCount % 500 == 0) {
+         this.setTarget(player);
+      }
+
+      this.setItemInHand(InteractionHand.MAIN_HAND, player.getMainHandItem());
+      this.setItemInHand(InteractionHand.OFF_HAND, player.getOffhandItem());
+
+      net.minecraft.nbt.CompoundTag tag = state.tag(player);
+      if (!tag.getBoolean("somewho_dropped")) {
+         tag.putBoolean("somewho_dropped", true);
+         state.save(player, tag);
+         this.dropItem(ItemStack.of(tag.getCompound("somewho_drop")));
+      }
+
+      this.lookAt(Anchor.EYES, player.getEyePosition());
+      this.getNavigation().moveTo(player, 0.2);
    }
 }

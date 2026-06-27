@@ -1,16 +1,12 @@
 package com.example.flywheel_of_terror;
 
 import java.util.Random;
-import com.example.flywheel_of_terror.client.client_safe;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 
@@ -19,16 +15,19 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
    bus = Bus.FORGE
 )
 public class exist_terror_event {
-   // event_in_process → per-player NBT ("exist_terror_active"); the chat-typing fields stay static
-   // (purely client-side A/V, Phase 3).
+   // Phase 3: the "Let me out…" chat-typing is now server-authoritative and per-player. The typing
+   // progress lives in NBT ("exist_tics" / "exist_next" / "exist_ctx"); the server sends each new
+   // line to the affected player via the EXIST_TYPE FxPacket (and EXIST_CLOSE when it finishes).
    public static Random random = new Random();
-   public static int tics_to_next_letter = 20;
-   public static int next_letter = 0;
    public static String mytext = "Let me out, someone, please ";
-   public static String context = "";
 
    public static void set_active(Player player, boolean value) {
       state.putBool(player, "exist_terror_active", value);
+      if (value) {
+         state.putInt(player, "exist_tics", 20);
+         state.putInt(player, "exist_next", 0);
+         state.putString(player, "exist_ctx", "");
+      }
    }
 
    @SubscribeEvent
@@ -41,30 +40,29 @@ public class exist_terror_event {
    @SubscribeEvent
    public static void writechar(PlayerTickEvent event) {
       Player player = event.player;
-      if (player.level().isClientSide) {
-         if (state.getBool(player, "exist_terror_active")) {
-            CompoundTag global_tag = player.getPersistentData();
-            CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
-            tag.putBoolean("exist_terror", true);
-            global_tag.put("flywheel_of_terror", tag);
-            tics_to_next_letter--;
-            if (tics_to_next_letter <= 0) {
-               context = context + mytext.charAt(next_letter);
-               DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> client_safe.existTerrorTypeChat(context));
-               tics_to_next_letter = random.nextInt(3, 15);
-               next_letter++;
-               System.out.println(context);
-            }
-
-            if (context.length() == mytext.length()) {
-               state.putBool(player, "exist_terror_active", false);
-               DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> client_safe.existTerrorClose());
-               context = "";
-               next_letter = 0;
-               tics_to_next_letter = 10;
-               player.sendSystemMessage(Component.literal("He has no permissions to anything."));
-            }
+      if (!player.level().isClientSide() && state.getBool(player, "exist_terror_active")) {
+         int tics = state.getInt(player, "exist_tics") - 1;
+         int next = state.getInt(player, "exist_next");
+         String context = state.getString(player, "exist_ctx");
+         if (tics <= 0 && next < mytext.length()) {
+            context = context + mytext.charAt(next);
+            Network.fx(player, Network.EXIST_TYPE, context);
+            tics = random.nextInt(3, 15);
+            next++;
          }
+
+         if (context.length() == mytext.length()) {
+            state.putBool(player, "exist_terror_active", false);
+            Network.fx(player, Network.EXIST_CLOSE);
+            context = "";
+            next = 0;
+            tics = 10;
+            player.sendSystemMessage(Component.literal("He has no permissions to anything."));
+         }
+
+         state.putInt(player, "exist_tics", tics);
+         state.putInt(player, "exist_next", next);
+         state.putString(player, "exist_ctx", context);
       }
    }
 

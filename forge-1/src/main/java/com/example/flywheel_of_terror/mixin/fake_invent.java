@@ -36,7 +36,7 @@ public class fake_invent {
    // vanilla render when show_model is false; otherwise let it run unchanged.
    @Inject(method = "m_280432_", at = @At("HEAD"), cancellable = true, remap = false)
    private static void flywheel$hideModel(CallbackInfo ci) {
-      if (!information.show_model) {
+      if (!information.client_events.show_model) {
          ci.cancel();
       }
    }

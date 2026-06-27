@@ -16,17 +16,10 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
    bus = Bus.FORGE
 )
 public class decline_run {
-   // tick_to_knock → per-player NBT ("decline_knock"); sound_must_be stays static (A/V).
-   public static boolean sound_must_be = false;
-
+   // tick_to_knock → per-player NBT ("decline_knock"); the punishment sound is now an S2C packet.
    @SubscribeEvent
    public static void check_build_up(PlayerTickEvent event) {
       Player player = event.player;
-      if (sound_must_be && player.level().isClientSide) {
-         player.playSound((SoundEvent)register_sounds.break_christ.get(), 1.0F, 1.0F);
-         sound_must_be = false;
-      }
-
       if (!player.level().isClientSide()) {
          int tick_to_knock = state.getInt(player, "decline_knock") - 1;
          state.putInt(player, "decline_knock", tick_to_knock);
@@ -58,7 +51,7 @@ public class decline_run {
             && !advanced_baron_detector.player_is_baron(player)) {
             player.teleportTo(player.getX() + 2.0, player.getY(), player.getZ());
             state.putInt(player, "decline_knock", 200);
-            sound_must_be = true;
+            Network.sound(player, (SoundEvent)register_sounds.break_christ.get());
             player.sendSystemMessage(Component.literal("Are you going somewhere?"));
             player.hurt(player.damageSources().generic(), 1.0F);
          }

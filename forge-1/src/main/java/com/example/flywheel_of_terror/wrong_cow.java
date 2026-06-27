@@ -26,8 +26,13 @@ public class wrong_cow extends Cow {
 
    public void tick() {
       super.tick();
-      if (information.just_player != null) {
-         this.lookAt(Anchor.EYES, information.just_player.getEyePosition());
+      if (this.level().isClientSide()) {
+         return;
+      }
+
+      Player target = information.getTarget(this);
+      if (target != null) {
+         this.lookAt(Anchor.EYES, target.getEyePosition());
 
          for (Player player : this.level().getEntitiesOfClass(Player.class, this.getBoundingBox().inflate(9.0))) {
             double x = this.getX() + this.getLookAngle().x * 0.5;

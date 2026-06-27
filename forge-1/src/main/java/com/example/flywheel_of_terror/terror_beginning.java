@@ -37,14 +37,9 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 )
 public class terror_beginning {
    // Phase 2: per-player gameplay state moved into each player's "flywheel_of_terror" NBT compound.
-   // The remaining statics are the cross-side audio/visual flags (set on the server tick, read on
-   // the client tick of the same handler) — those are deferred to the Phase 3 networking layer.
-   public static boolean sound_terror = false;
-   public static int tics_to_next_sound = 20;
+   // Phase 3: the former cross-side audio/visual flags are gone — the server now sends his_hunt /
+   // break_house / leave_the_house cues to the affected player as S2C PlaySoundPackets.
    public static Random random = new Random();
-   public static boolean sound_must_be = false;
-   public static boolean hunt_sound_must_be = false;
-   public static boolean sound_house_destroyed = false;
 
    // Per-player accessors used by other classes (replace the old shared statics).
    public static boolean his_hunt(Player player) {
@@ -77,7 +72,6 @@ public class terror_beginning {
       tag.putInt("tics_to_next_house", 150);
       tag.putBoolean("first_message_was", false);
       tag.putInt("killed_victims", 0);
-      System.out.println("HOUSE DESTROYED");
       double xx = (double)tag.getInt("house_X");
       double yy = (double)tag.getInt("house_Y");
       double zz = (double)tag.getInt("house_Z");
@@ -99,7 +93,6 @@ public class terror_beginning {
 
       tag.putBoolean("builded", false);
       global_tag.put("flywheel_of_terror", tag);
-      System.out.println(tag.getBoolean("builded"));
       player.sendSystemMessage(Component.literal("house was slain by oh_no"));
    }
 
@@ -178,20 +171,8 @@ public class terror_beginning {
          boolean near_house = state.getBool(player, "near_house");
          int killed_victims = state.getInt(player, "killed_victims");
          int count_of_victims = state.getInt(player, "count_of_victims");
-         if (client && hunt_sound_must_be) {
-            player.playSound((SoundEvent)register_sounds.his_hunt.get(), 1.0F, 1.0F);
-            hunt_sound_must_be = false;
-         }
-
-         if (client && sound_house_destroyed) {
-            player.playSound((SoundEvent)register_sounds.break_house.get(), 1.0F, 1.0F);
-            sound_house_destroyed = false;
-         }
-
-         if (sound_must_be && event.player.level().isClientSide()) {
-            event.player.playSound((SoundEvent)register_sounds.break_house.get(), 1.0F, 1.0F);
-            sound_must_be = false;
-         }
+         // Phase 3: the his_hunt / break_house / leave_the_house cues are now S2C PlaySoundPackets
+         // sent from the server branches below, so only the affected player hears them.
 
          if (near_house && !event.player.level().isClientSide() && event.player.level() instanceof ServerLevel serv) {
             if (serv.getDayTime() > 14000L && serv.getDayTime() < 14300L && !labyrinth_event.in_lab(player)) {
@@ -205,12 +186,14 @@ public class terror_beginning {
 
             if (serv.getDayTime() > 14300L && serv.getDayTime() < 14600L && first_message_was) {
                event.player.displayClientMessage(Component.literal("§c leave the house, now."), true);
-               sound_terror = true;
+               if (event.player.tickCount % 160 == 0) {
+                  Network.sound(event.player, (SoundEvent)register_sounds.leave_the_house.get());
+               }
             }
 
             if (serv.getDayTime() == 14700L && first_message_was) {
                his_hunt = true;
-               sound_house_destroyed = true;
+               Network.sound(event.player, (SoundEvent)register_sounds.break_house.get());
                destroy_house(player);
                first_message_was = false;
                killed_victims = 0;
@@ -220,7 +203,7 @@ public class terror_beginning {
             if (serv.getDayTime() > 14700L & serv.getDayTime() < 17000L && first_message_was) {
                event.player.displayClientMessage(Component.literal("You came back too soon."), true);
                first_message_was = false;
-               sound_house_destroyed = true;
+               Network.sound(event.player, (SoundEvent)register_sounds.break_house.get());
                destroy_house(player);
                killed_victims = 0;
             }
@@ -271,7 +254,7 @@ public class terror_beginning {
                int y = event.player.level().getHeight(Types.WORLD_SURFACE, (int)x, (int)z) + 1;
                he.setPos(x, (double)y, z);
                event.player.level().addFreshEntity(he);
-               hunt_sound_must_be = true;
+               Network.sound(event.player, (SoundEvent)register_sounds.his_hunt.get());
             }
 
             if (serv.getDayTime() > 17200L && serv.getDayTime() < 18900L && his_hunt) {
@@ -281,19 +264,6 @@ public class terror_beginning {
             if (serv.getDayTime() > 18900L) {
                his_hunt = false;
             }
-         }
-
-         if (sound_terror && event.player.level().isClientSide()) {
-            tics_to_next_sound--;
-         }
-
-         if (tics_to_next_sound <= 0 && sound_terror && event.player.level().isClientSide()) {
-            if (near_house) {
-               event.player.playSound((SoundEvent)register_sounds.leave_the_house.get(), 1.0F, 1.0F);
-               tics_to_next_sound = 160;
-            }
-
-            sound_terror = false;
          }
 
          // Persist the per-player gameplay state mutated above (only meaningful server-side).
@@ -493,7 +463,6 @@ public class terror_beginning {
          tag.putBoolean("builded", true);
          boolean bedrock_placed = false;
          tag.putBoolean("house_builded_now", false);
-         System.out.println("HOUSE IS BUILDED");
          // terror_continue per-player cooldown / retry flags (same NBT keys terror_continue reads).
          tag.putInt("tics_cooldown", 400);
          tag.putBoolean("away_house", false);

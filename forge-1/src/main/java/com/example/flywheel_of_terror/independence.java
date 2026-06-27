@@ -1,6 +1,5 @@
 package com.example.flywheel_of_terror;
 
-import com.example.flywheel_of_terror.client.client_safe;
 import java.util.Random;
 import java.util.UUID;
 import javax.annotation.Nullable;
@@ -18,8 +17,6 @@ import net.minecraftforge.event.TickEvent.Phase;
 import net.minecraftforge.event.TickEvent.PlayerTickEvent;
 import net.minecraftforge.event.TickEvent.ServerTickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
@@ -65,8 +62,7 @@ public class independence {
          );
       player.teleportTo(x, y, z);
       if (player.distanceTo(target) < 1.5F) {
-         LivingEntity attackTarget = target;
-         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> client_safe.independenceAttack(player, attackTarget));
+         Network.fx(player, Network.INDEP_ATTACK, target.getId());
          target.hurt(player.damageSources().playerAttack(player), 2000.0F);
          state.putInt(player, "indep_tics", 0);
          player.swing(InteractionHand.MAIN_HAND);

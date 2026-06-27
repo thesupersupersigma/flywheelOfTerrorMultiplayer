@@ -26,7 +26,7 @@ public class notice_in_inventory {
       if (state.getBool(player, "notice_in_inventory_active") && !player.level().isClientSide()) {
          CompoundTag global_tag = player.getPersistentData();
          CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
-         ItemStack bebra = new ItemStack((ItemLike)add_items.notice.get());
+         ItemStack notice_stack = new ItemStack((ItemLike)add_items.notice.get());
          List<String> info = new ArrayList<>();
          info.add("Help yourself");
          info.add("You can't hide");
@@ -40,8 +40,8 @@ public class notice_in_inventory {
             info.add("Do you know this place " + x + " " + y + " " + z + "?");
          }
 
-         bebra.setHoverName(Component.literal(info.get(random.nextInt(0, info.size()))));
-         player.getInventory().setItem(15, bebra);
+         notice_stack.setHoverName(Component.literal(info.get(random.nextInt(0, info.size()))));
+         player.getInventory().setItem(15, notice_stack);
          state.putBool(player, "notice_in_inventory_active", false);
       }
    }

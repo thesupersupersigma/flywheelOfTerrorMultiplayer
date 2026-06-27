@@ -39,9 +39,9 @@ public class remove_entities {
          int tics_without_life = state.getInt(player, "tics_without_life") - 1;
          state.putInt(player, "tics_without_life", tics_without_life);
          if (tics_without_life > 0 && !terror_beginning.first_message_was(player) || terror_beginning.his_hunt(player)) {
-            for (LivingEntity bebra : player.level().getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(100.0))) {
-               if (!(bebra instanceof Player) && !(bebra instanceof oh_no) && !(bebra instanceof Villager)) {
-                  bebra.remove(RemovalReason.DISCARDED);
+            for (LivingEntity mob : player.level().getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(100.0))) {
+               if (!(mob instanceof Player) && !(mob instanceof oh_no) && !(mob instanceof Villager)) {
+                  mob.remove(RemovalReason.DISCARDED);
                }
             }
 

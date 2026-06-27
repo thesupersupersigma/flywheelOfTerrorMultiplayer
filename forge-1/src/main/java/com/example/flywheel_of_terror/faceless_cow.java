@@ -6,6 +6,7 @@ import net.minecraft.world.entity.Entity.RemovalReason;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier.Builder;
 import net.minecraft.world.entity.animal.Cow;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
@@ -28,8 +29,12 @@ public class faceless_cow extends Cow {
 
    public void tick() {
       super.tick();
-      if (!this.level().isClientSide() && information.just_player != null) {
-         this.lookAt(Anchor.EYES, information.just_player.getEyePosition());
+      if (!this.level().isClientSide()) {
+         Player player = information.getTarget(this);
+         if (player != null) {
+            this.lookAt(Anchor.EYES, player.getEyePosition());
+         }
+
          this.tics_to_delete--;
          if (this.tics_to_delete < 0) {
             this.remove(RemovalReason.DISCARDED);

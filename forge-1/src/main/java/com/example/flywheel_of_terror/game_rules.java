@@ -1,6 +1,5 @@
 package com.example.flywheel_of_terror;
 
-import com.example.flywheel_of_terror.client.client_safe;
 import java.util.ArrayList;
 import java.util.Collection;
 import net.minecraft.nbt.CompoundTag;
@@ -25,8 +24,6 @@ import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent.Finish;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
@@ -52,7 +49,6 @@ public class game_rules {
                   Item item = stack.getItem();
                   if (isMeatItem(item)) {
                      toRemove.add(itemEntity);
-                     System.out.println("[NoMeat] Удален дроп: " + item.getName(stack).getString());
                   }
                }
 
@@ -113,11 +109,11 @@ public class game_rules {
    public static void every(PlayerTickEvent event) {
       Player player = event.player;
       if (terror_end.phase(player) == 0) {
-         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> client_safe.gameRulesCameraTick());
-
          if (!player.level().isClientSide()) {
+            // Force first-person + cap render distance on this player's client (Phase 3 S2C packet).
+            Network.fx(player, Network.GAMERULES_CAM);
+
             if (player.level().getDifficulty() == Difficulty.PEACEFUL && player instanceof ServerPlayer serv) {
-               System.out.println("work");
                serv.getServer().setDifficulty(Difficulty.NORMAL, true);
                serv.connection.disconnect(Component.literal("Entity.RemovalReason.MONSTER"));
             }

@@ -26,11 +26,10 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class panic {
-   // event_in_process / event_in_process2 → per-player NBT; tics_of_black + sound flags stay static
-   // (client blackout shader / sounds, Phase 3).
+   // event_in_process / event_in_process2 → per-player NBT. Phase 3: tics_of_black (the blackout
+   // shader timer, read by the client render handler) is set + ticked client-side via an S2C
+   // FxPacket; the teleport / nightmare sounds are S2C PlaySoundPackets.
    public static int tics_of_black = -2;
-   public static boolean sound_must_be = false;
-   public static boolean sound_must_be2 = false;
    public static Random random = new Random();
 
    public static void set_active(Player player, boolean value) {
@@ -51,12 +50,12 @@ public class panic {
             player.level().addFreshEntity(vill2);
             vill.remove(RemovalReason.DISCARDED);
             if (vill2.hits_to_remove > 0) {
-               sound_must_be = true;
+               Network.sound(player, (SoundEvent)register_sounds.teleport.get());
             } else {
                tag.putInt("panic", tag.getInt("panic") + 1);
                global_tag.put("flywheel_of_terror", tag);
-               sound_must_be2 = true;
-               tics_of_black = 200;
+               Network.sound(player, (SoundEvent)register_sounds.nightmare.get());
+               Network.fx(player, Network.BLACKOUT, 200);
                state.putBool(player, "panic_active2", true);
             }
          }
@@ -76,20 +75,7 @@ public class panic {
    @SubscribeEvent
    public static void every_time(PlayerTickEvent event) {
       Player player = event.player;
-      if (player.level().isClientSide()) {
-         if (sound_must_be) {
-            player.playSound((SoundEvent)register_sounds.teleport.get(), 1.0F, 1.0F);
-            sound_must_be = false;
-         }
-
-         if (sound_must_be2) {
-            player.playSound((SoundEvent)register_sounds.nightmare.get(), 1.0F, 1.0F);
-            sound_must_be2 = false;
-         }
-      }
-
       if (!player.level().isClientSide()) {
-         tics_of_black--;
          if (state.getBool(player, "panic_active")) {
             double xx = player.getLookAngle().x;
             double zz = player.getLookAngle().z;

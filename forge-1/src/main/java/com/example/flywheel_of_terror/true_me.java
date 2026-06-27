@@ -62,7 +62,8 @@ public class true_me extends PathfinderMob {
          this.level().setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
          this.level().setBlock(pos2, Blocks.AIR.defaultBlockState(), 3);
 
-         for (Player player : this.level().getEntitiesOfClass(Player.class, this.getBoundingBox().inflate(100.0))) {
+         Player player = information.getTarget(this);
+         if (player != null && this.distanceTo(player) <= 100.0) {
             this.lookAt(Anchor.EYES, player.getEyePosition());
             this.getNavigation().moveTo(player, 0.7F);
             int xx = (int)this.getX();

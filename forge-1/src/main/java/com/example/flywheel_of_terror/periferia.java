@@ -18,15 +18,17 @@ public class periferia {
    @SubscribeEvent
    public static void every_time(PlayerTickEvent event) {
       Player player = event.player;
-      if (!player.level().isClientSide() && state.getBool(player, "periferia_active") && information.inventory_open) {
+      // "inv_open" is reported by the client via the C2S ScreenStatePacket (Phase 3); the server no
+      // longer reads the client-only information.inventory_open static.
+      if (!player.level().isClientSide() && state.getBool(player, "periferia_active") && state.getBool(player, "inv_open")) {
          int tics_to_spawn = state.getInt(player, "periferia_tics") - 1;
          if (tics_to_spawn <= 0) {
-            System.out.println("spawn must be");
             double x = player.getLookAngle().x;
             double z = player.getLookAngle().z;
             fake_steve me = new fake_steve((EntityType<? extends PathfinderMob>)add_humans.fake_steve.get(), player.level());
             Vec3 pos = new Vec3(player.getX() + x * 0.3, player.getY(), player.getZ() + z * 0.3);
             me.setPos(pos);
+            information.setTarget(me, player);
             player.level().addFreshEntity(me);
             tics_to_spawn = 40;
             state.putBool(player, "periferia_active", false);
