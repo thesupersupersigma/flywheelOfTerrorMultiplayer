@@ -111,7 +111,11 @@ public class game_rules {
       if (terror_end.phase(player) == 0) {
          if (!player.level().isClientSide()) {
             // Force first-person + cap render distance on this player's client (Phase 3 S2C packet).
-            Network.fx(player, Network.GAMERULES_CAM);
+            // Carry whether the all_look_at_you "stare" window is open (i = 1) so the client knows
+            // not to yank the camera back to first-person while that event holds it in third-person;
+            // the server's tics_of_looking NBT is not synced, so it must travel in the packet.
+            int looking = state.getInt(player, "tics_of_looking") > 0 ? 1 : 0;
+            Network.fx(player, Network.GAMERULES_CAM, looking);
 
             if (player.level().getDifficulty() == Difficulty.PEACEFUL && player instanceof ServerPlayer serv) {
                serv.getServer().setDifficulty(Difficulty.NORMAL, true);

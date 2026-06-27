@@ -48,30 +48,27 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 - [ ] Version bump + changelog + README update.
 - [x] Tidy debug cruft: `bebra`, Cyrillic prints, stray `System.out.println`.
 
-## Phase 5 — OP Commands
-Add a proper command system so server operators can manually control the horror experience.
-All commands under `/fot` (short for Flywheel of Terror). Requires OP level 2.
+## Phase 5 — OP Commands — DONE (build green)
+Command system in `commands.java` (`@EventBusSubscriber` FORGE bus). All commands under `/fot`,
+gated on `source.hasPermission(2)`. Every sub-command uses `EntityArgument.players()` so `@a`/`@p`/
+`@s`/`@r`/names all work and the action applies to each matched player; offline/unknown targets
+error out naturally (EntityArgument only resolves online players).
 
-- [ ] Set up a `RegisterCommandsEvent` handler and register `/fot` as the root literal.
-- [ ] `/fot start <player>` — begin the full horror sequence on a specific player (sets their NBT
-      state as if they had just started a fresh run).
-- [ ] `/fot reset <player>` — wipe all `flywheel_of_terror` NBT for that player, completely
-      resetting their horror state to zero.
-- [ ] `/fot status <player>` — print the player's current terror state to the OP in chat
-      (phase, active events, house location, health modifier, kill count, etc.).
-- [ ] `/fot event <player> <event>` — manually trigger a specific named event on a player.
-      Supported events: `paranoia`, `labyrinth`, `apocalypsis`, `below`, `panic`, `thunder`,
-      `paralysis`, `circle`, `tool_break`, `fire`, `exist_terror`, `scarecrow`, `darknet`,
-      `he_is_here`, `oh_no`, `independence`, `all_look`, `shipwrecked`, `something_wrong`,
-      `baron`, `remove_entities`.
-- [ ] `/fot stop <player>` — cancel all currently active events for a player (sets all
-      `event_in_process` NBT flags to false/0).
-- [ ] `/fot phase <player> <0-3>` — manually set the `terror_end` phase for a player.
-- [ ] `/fot hunt <player>` — force-start the nightly hunt on a specific player immediately
-      regardless of time of day.
-- [ ] `/fot house <player>` — teleport the OP to that player's registered house coordinates,
-      or print them if no house is set yet.
-- [ ] `/fot give <player> <item>` — give a player a mod-specific item (`knife`, `notice`,
-      `punishment`, `your_legacy`, `truth`).
-- [ ] Tab-completion for all player and event arguments.
-- [ ] Commands should be no-ops (with an error message) if the target player is not online.
+- [x] `RegisterCommandsEvent` handler registers `/fot` as the root literal.
+- [x] `/fot start <player>` — mirrors `first_entry` fresh-run seeding (phase 0, reseed call/cooldown/
+      scheduler/seconds_to_change, clear his_hunt/first_message_was).
+- [x] `/fot reset <player>` — removes the whole `flywheel_of_terror` NBT compound.
+- [x] `/fot status <player>` — prints phase, his_hunt, builded, victims, maxhp, kills, house coords,
+      scheduler timers, and active-event flags.
+- [x] `/fot event <player> <event>` — triggers any of the 21 named events via their existing
+      `set_active`/`do_event`/`set_tics` triggers (scarecrow tags the nearest mob; oh_no spawns the
+      chaser; something_wrong carves a pit behind).
+- [x] `/fot stop <player>` — deactivates all `*_active` flags + paralysis/independence/shipwrecked/
+      fire/remove_entities/he_is_here state.
+- [x] `/fot phase <player> <0-3>` — sets the `terror_end` phase NBT.
+- [x] `/fot hunt <player>` — forces `his_hunt`, spawns `oh_no`, plays the hunt cue immediately.
+- [x] `/fot house <player>` — teleports the OP to the player's bed/house, or errors if none set.
+- [x] `/fot give <player> <item>` — gives `knife`/`notice`/`punishment`/`your_legacy`/`truth`
+      (`truth` is an alias for the signature knife `my_knife`).
+- [x] Tab-completion for player, event, and item arguments.
+- [x] Offline/unknown target → error (inherent to `EntityArgument.players()`).

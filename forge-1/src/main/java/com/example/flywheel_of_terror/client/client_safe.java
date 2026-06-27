@@ -1,6 +1,5 @@
 package com.example.flywheel_of_terror.client;
 
-import com.example.flywheel_of_terror.state;
 import net.minecraft.client.Camera;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
@@ -30,10 +29,13 @@ public final class client_safe {
    private client_safe() {
    }
 
-   /** game_rules.every: force first person + cap render distance. */
-   public static void gameRulesCameraTick() {
-      Player local = Minecraft.getInstance().player;
-      if (local == null || state.getInt(local, "tics_of_looking") <= 0) {
+   /**
+    * game_rules.every: force first person + cap render distance. {@code looking} is the server's
+    * all_look_at_you state, carried in the packet (the server NBT it lives in is not synced), so we
+    * don't fight that event's third-person camera while its window is open.
+    */
+   public static void gameRulesCameraTick(boolean looking) {
+      if (!looking) {
          Minecraft.getInstance().options.setCameraType(CameraType.FIRST_PERSON);
       }
 
@@ -43,16 +45,13 @@ public final class client_safe {
       }
    }
 
-   /** all_look_at_you.every: third-person front + make nearby mobs stare at the camera. */
+   /**
+    * all_look_at_you.every: force this client into third-person front. The "nearby mobs stare at
+    * you" rotation is done server-authoritatively in {@link com.example.flywheel_of_terror.all_look_at_you}
+    * so every client sees it; this method only handles the camera (which is client-only).
+    */
    public static void allLookAtYouTick(Player player) {
       Minecraft.getInstance().options.setCameraType(CameraType.THIRD_PERSON_FRONT);
-      if (!player.level().isClientSide()) {
-         for (Entity mob : player.level().getEntitiesOfClass(Entity.class, player.getBoundingBox().inflate(300.0))) {
-            Camera cam = Minecraft.getInstance().gameRenderer.getMainCamera();
-            Vec3 pos = cam.getPosition();
-            mob.lookAt(Anchor.EYES, pos);
-         }
-      }
    }
 
    /** information.return_to_normal: restore saved mouse sensitivity. */

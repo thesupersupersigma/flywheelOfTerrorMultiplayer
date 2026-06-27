@@ -21,7 +21,10 @@ public class decline_run {
    public static void check_build_up(PlayerTickEvent event) {
       Player player = event.player;
       if (!player.level().isClientSide()) {
-         int tick_to_knock = state.getInt(player, "decline_knock") - 1;
+         // Restore the original 100-tick initial warm-up: the old static started at 100, so the first
+         // knock could not fire until 100 ticks in. NBT defaults to 0, so seed it to 100 when unset.
+         CompoundTag knock_tag = state.tag(player);
+         int tick_to_knock = (knock_tag.contains("decline_knock") ? knock_tag.getInt("decline_knock") : 100) - 1;
          state.putInt(player, "decline_knock", tick_to_knock);
          boolean no_any_blocks = true;
          CompoundTag global_tag = player.getPersistentData();

@@ -13,6 +13,14 @@ public final class sound_heart {
    }
 
    public static void play(Player player) {
+      // Restore the original ~20-tick de-dup cooldown so a re-trigger inside that window does not
+      // stack a second heartbeat. Tracked per-player via game time instead of the old shared static.
+      long now = player.level().getGameTime();
+      if (now < state.getLong(player, "sound_heart_cd")) {
+         return;
+      }
+
+      state.putLong(player, "sound_heart_cd", now + 20L);
       Network.sound(player, (SoundEvent)register_sounds.heart_attack.get(), 8.0F, 1.0F);
    }
 }

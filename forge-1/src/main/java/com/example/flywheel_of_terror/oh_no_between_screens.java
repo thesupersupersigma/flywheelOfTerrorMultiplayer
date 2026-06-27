@@ -98,8 +98,23 @@ public class oh_no_between_screens {
                frame_width,
                frame_height
             );
-         // The frame counter is advanced once per client tick in client_net.clientTick; render2 only
-         // draws, so the animation runs at the same speed whether or not a GUI screen is open.
+         // The frame counter is also advanced once per client tick in client_net.clientTick. The
+         // original advanced it a second time here while a GUI screen was open, so the overlay ran at
+         // double speed (and finished sooner) over screens — restore that by advancing again here.
+         tics_of_event--;
+         if (cycle == 1) {
+            current_frame++;
+         } else {
+            current_frame--;
+         }
+
+         if (current_frame == count_of_frames && cycle == 1) {
+            cycle = 2;
+         }
+
+         if (current_frame == 1 && cycle == 2) {
+            cycle = 1;
+         }
       }
    }
    }

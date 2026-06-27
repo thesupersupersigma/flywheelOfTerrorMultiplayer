@@ -91,7 +91,7 @@ public final class client_net {
             client_safe.existTerrorClose();
             break;
          case Network.GAMERULES_CAM:
-            client_safe.gameRulesCameraTick();
+            client_safe.gameRulesCameraTick(msg.i > 0);
             break;
          case Network.ALL_LOOK:
             if (local != null) {
