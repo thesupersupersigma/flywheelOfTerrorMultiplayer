@@ -24,10 +24,15 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class thunder_behind {
-   public static boolean event_in_process = false;
+   // event_in_process → per-player NBT ("thunder_behind_active"); the punch/madness timers stay
+   // static (client-side "turn around" A/V, Phase 3).
    public static Random random = new Random();
    public static int tics_to_punch = -10;
    public static int tics_of_madness = 0;
+
+   public static void set_active(Player player, boolean value) {
+      state.putBool(player, "thunder_behind_active", value);
+   }
 
    @EventBusSubscriber(value = {Dist.CLIENT})
    public static class client_events {
@@ -67,7 +72,7 @@ public class thunder_behind {
          player.playSound((SoundEvent)register_sounds.big_glitch.get(), 1.0F, 1.0F);
       }
 
-      if (event_in_process && !player.level().isClientSide()) {
+      if (state.getBool(player, "thunder_behind_active") && !player.level().isClientSide()) {
          double xx = player.getLookAngle().x;
          double zz = player.getLookAngle().z;
          BlockPos pos = new BlockPos((int)(player.getX() - 5.0 * xx), (int)player.getY(), (int)(player.getZ() - zz * 5.0));
@@ -107,7 +112,7 @@ public class thunder_behind {
             tag.putInt("thunder_behind", tag.getInt("thunder_behind") + 1);
          }
 
-         event_in_process = false;
+         state.putBool(player, "thunder_behind_active", false);
       }
    }
 }

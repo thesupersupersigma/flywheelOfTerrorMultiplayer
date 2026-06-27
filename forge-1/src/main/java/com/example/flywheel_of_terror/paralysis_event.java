@@ -16,21 +16,19 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
    bus = Bus.FORGE
 )
 public class paralysis_event {
+   // Freeze timer + pose → per-player NBT ("paral_time" / "paral_yrot/xrot/xpos/ypos/zpos").
+   // sound_must_be stays static (A/V).
    public static boolean sound_must_be = true;
-   public static Integer time = 0;
-   public static float yrot;
-   public static float xrot;
-   public static double xpos;
-   public static double ypos;
-   public static double zpos;
 
    public static void start_paralysis(Player player, int seconds) {
-      time = seconds;
-      yrot = player.getYRot();
-      xrot = player.getXRot();
-      xpos = player.getX();
-      ypos = player.getY();
-      zpos = player.getZ();
+      CompoundTag tag = state.tag(player);
+      tag.putInt("paral_time", seconds);
+      tag.putFloat("paral_yrot", player.getYRot());
+      tag.putFloat("paral_xrot", player.getXRot());
+      tag.putDouble("paral_xpos", player.getX());
+      tag.putDouble("paral_ypos", player.getY());
+      tag.putDouble("paral_zpos", player.getZ());
+      state.save(player, tag);
    }
 
    public static void do_event(Player player, int time_of_paralysis) {
@@ -60,14 +58,16 @@ public class paralysis_event {
    public static void eventdo(PlayerTickEvent event) {
       Player player = event.player;
       boolean client = player.level().isClientSide();
-      if (player.tickCount % 80 == 0) {
-         time = time - 1;
+      CompoundTag tag = state.tag(player);
+      if (!client && player.tickCount % 80 == 0) {
+         tag.putInt("paral_time", tag.getInt("paral_time") - 1);
+         state.save(player, tag);
       }
 
-      if (time > 0) {
-         player.setYRot(yrot);
-         player.setXRot(xrot);
-         player.teleportTo(xpos, ypos, zpos);
+      if (tag.getInt("paral_time") > 0) {
+         player.setYRot(tag.getFloat("paral_yrot"));
+         player.setXRot(tag.getFloat("paral_xrot"));
+         player.teleportTo(tag.getDouble("paral_xpos"), tag.getDouble("paral_ypos"), tag.getDouble("paral_zpos"));
       }
 
       if (!client && wait_situation(player)) {

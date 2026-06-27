@@ -18,9 +18,13 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
    bus = Bus.FORGE
 )
 public class circle_christ {
-   public static boolean event_in_process = false;
+   // event_in_process → per-player NBT ("circle_christ_active"); sound flags stay static (Phase 3).
    public static boolean sound_must_be = false;
    public static boolean sound_must_be2 = false;
+
+   public static void set_active(Player player, boolean value) {
+      state.putBool(player, "circle_christ_active", value);
+   }
 
    @SubscribeEvent
    public static void nakaz(BreakEvent event) {
@@ -55,7 +59,7 @@ public class circle_christ {
          sound_must_be2 = false;
       }
 
-      if (event_in_process && !player.level().isClientSide() && !terror_continue.near_maze) {
+      if (state.getBool(player, "circle_christ_active") && !player.level().isClientSide() && !terror_continue.near_maze(player)) {
          int fixedX = (int)player.getX();
          int fixedY = (int)player.getY();
          int fixedZ = (int)player.getZ();
@@ -118,7 +122,7 @@ public class circle_christ {
          player.level().setBlock(pos22, Blocks.NETHERITE_BLOCK.defaultBlockState(), 3);
          player.level().setBlock(pos23, Blocks.NETHERITE_BLOCK.defaultBlockState(), 3);
          player.level().setBlock(pos24, Blocks.NETHERITE_BLOCK.defaultBlockState(), 3);
-         event_in_process = false;
+         state.putBool(player, "circle_christ_active", false);
          sound_must_be = true;
       }
 

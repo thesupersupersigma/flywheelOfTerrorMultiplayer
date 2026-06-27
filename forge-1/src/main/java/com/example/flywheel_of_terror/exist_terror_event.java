@@ -19,16 +19,21 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
    bus = Bus.FORGE
 )
 public class exist_terror_event {
+   // event_in_process → per-player NBT ("exist_terror_active"); the chat-typing fields stay static
+   // (purely client-side A/V, Phase 3).
    public static Random random = new Random();
-   public static boolean event_in_process = false;
    public static int tics_to_next_letter = 20;
    public static int next_letter = 0;
    public static String mytext = "Let me out, someone, please ";
    public static String context = "";
 
+   public static void set_active(Player player, boolean value) {
+      state.putBool(player, "exist_terror_active", value);
+   }
+
    @SubscribeEvent
    public static void zerodamage(LivingHurtEvent event) {
-      if (event.getEntity() instanceof Player && event_in_process) {
+      if (event.getEntity() instanceof Player player && state.getBool(player, "exist_terror_active")) {
          event.setCanceled(true);
       }
    }
@@ -37,7 +42,7 @@ public class exist_terror_event {
    public static void writechar(PlayerTickEvent event) {
       Player player = event.player;
       if (player.level().isClientSide) {
-         if (event_in_process) {
+         if (state.getBool(player, "exist_terror_active")) {
             CompoundTag global_tag = player.getPersistentData();
             CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
             tag.putBoolean("exist_terror", true);
@@ -52,7 +57,7 @@ public class exist_terror_event {
             }
 
             if (context.length() == mytext.length()) {
-               event_in_process = false;
+               state.putBool(player, "exist_terror_active", false);
                DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> client_safe.existTerrorClose());
                context = "";
                next_letter = 0;
@@ -65,7 +70,7 @@ public class exist_terror_event {
 
    @SubscribeEvent
    public static void declinebreak(ServerChatEvent event) {
-      if (event_in_process) {
+      if (state.getBool(event.getPlayer(), "exist_terror_active")) {
          event.setCanceled(true);
       }
    }

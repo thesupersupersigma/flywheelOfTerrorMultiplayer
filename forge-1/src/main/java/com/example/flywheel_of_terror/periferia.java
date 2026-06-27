@@ -10,17 +10,16 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class periferia {
-   public static boolean event_in_process = false;
-   public static int tics_to_spawn = 40;
+   public static void set_active(Player player, boolean value) {
+      state.putBool(player, "periferia_active", value);
+      state.putInt(player, "periferia_tics", 40);
+   }
 
    @SubscribeEvent
    public static void every_time(PlayerTickEvent event) {
       Player player = event.player;
-      if (!player.level().isClientSide()) {
-         if (event_in_process && information.inventory_open) {
-            tics_to_spawn--;
-         }
-
+      if (!player.level().isClientSide() && state.getBool(player, "periferia_active") && information.inventory_open) {
+         int tics_to_spawn = state.getInt(player, "periferia_tics") - 1;
          if (tics_to_spawn <= 0) {
             System.out.println("spawn must be");
             double x = player.getLookAngle().x;
@@ -30,8 +29,10 @@ public class periferia {
             me.setPos(pos);
             player.level().addFreshEntity(me);
             tics_to_spawn = 40;
-            event_in_process = false;
+            state.putBool(player, "periferia_active", false);
          }
+
+         state.putInt(player, "periferia_tics", tics_to_spawn);
       }
    }
 }

@@ -112,7 +112,7 @@ public class information {
       }
 
       if (text.contains("next1")) {
-         paranoia.time_to_event = 1;
+         state.putInt(player, "time_to_event", 1);
       }
 
       if (text.contains("between")) {

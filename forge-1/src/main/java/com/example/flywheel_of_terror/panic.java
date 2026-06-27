@@ -26,12 +26,16 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class panic {
+   // event_in_process / event_in_process2 → per-player NBT; tics_of_black + sound flags stay static
+   // (client blackout shader / sounds, Phase 3).
    public static int tics_of_black = -2;
-   public static boolean event_in_process = false;
-   public static boolean event_in_process2 = false;
    public static boolean sound_must_be = false;
    public static boolean sound_must_be2 = false;
    public static Random random = new Random();
+
+   public static void set_active(Player player, boolean value) {
+      state.putBool(player, "panic_active", value);
+   }
 
    @SubscribeEvent
    public static void moveside(LivingHurtEvent event) {
@@ -53,7 +57,7 @@ public class panic {
                global_tag.put("flywheel_of_terror", tag);
                sound_must_be2 = true;
                tics_of_black = 200;
-               event_in_process2 = true;
+               state.putBool(player, "panic_active2", true);
             }
          }
       }
@@ -86,7 +90,7 @@ public class panic {
 
       if (!player.level().isClientSide()) {
          tics_of_black--;
-         if (event_in_process) {
+         if (state.getBool(player, "panic_active")) {
             double xx = player.getLookAngle().x;
             double zz = player.getLookAngle().z;
             double yy = (double)player.level().getHeight(Types.MOTION_BLOCKING_NO_LEAVES, (int)xx, (int)zz);
@@ -104,11 +108,11 @@ public class panic {
             }
 
             player.level().addFreshEntity(vill2);
-            event_in_process = false;
+            state.putBool(player, "panic_active", false);
          }
 
-         if (event_in_process2) {
-            event_in_process2 = false;
+         if (state.getBool(player, "panic_active2")) {
+            state.putBool(player, "panic_active2", false);
             MobEffectInstance blind = new MobEffectInstance(MobEffects.BLINDNESS, 100, 2, false, true, false);
             MobEffectInstance slow = new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 22, false, true, false);
             player.addEffect(blind);

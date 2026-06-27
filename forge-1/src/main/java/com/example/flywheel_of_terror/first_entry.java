@@ -18,6 +18,12 @@ public class first_entry {
       player.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.1);
       if (!tag.getBoolean("first_entry")) {
          paranoia.set_seconds_to_call(player, 299);
+         // Seed the per-player intruder-event cooldown (was a static initialised to 4000).
+         state.putInt(player, "tics_cooldown", 4000);
+         // Seed the per-player paranoia scheduler countdown (was a static initialised randomly).
+         paranoia.seed_time_to_event(player);
+         // Seed the per-player "something wrong" terrain-reshape countdown.
+         state.putInt(player, "seconds_to_change", something_wrong.random.nextInt(180, 360));
       }
    }
 

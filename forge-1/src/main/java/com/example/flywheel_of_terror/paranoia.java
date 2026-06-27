@@ -40,23 +40,26 @@ import com.example.flywheel_of_terror.client.client_safe;
 @EventBusSubscriber
 public class paranoia {
    public static Random random = new Random();
+   // Cross-side A/V flags + per-client timers (still static — Phase 3 networking territory).
    public static boolean steps_must_be = false;
    public static boolean force_open_door_must_be = false;
-   public static int tics = 0;
    public static int min_time = 300;
    public static int max_time = 600;
-   public static int time_to_event = random.nextInt(min_time, max_time);
    public static int ii = 6;
-   public static boolean sleep = false;
-   public static int tics_to_door = -80;
    public static int tics_of_call = -4;
    public static int current_call = 1;
    public static int tics_from_last_event = 0;
-   public static int tics_without_events = -2;
    public static int seconds_to_undefined_noise = -random.nextInt(700, 1400);
    public static int tics_of_steps = -1;
    public static boolean call_sound_must_be = false;
    public static final String seconds_to_call_nbt = "second_to_call";
+
+   // Phase 2: the master scheduler's per-player timers/flags now live in the player's NBT
+   // ("time_to_event", "tics_without_events", "para_sleep", "tics_to_door", "para_break_tics")
+   // and are decremented server-authoritatively.
+   public static void seed_time_to_event(Player player) {
+      state.putInt(player, "time_to_event", random.nextInt(min_time, max_time));
+   }
 
    @SubscribeEvent
    public static void undefined_noises(PlayerTickEvent event) {
@@ -169,14 +172,15 @@ public class paranoia {
    @SubscribeEvent
    public static void try_sleep(PlayerSleepInBedEvent event) {
       if (random.nextInt(1, 16) == 4) {
-         sleep = true;
-         tics_to_door = 80;
+         Player player = event.getEntity();
+         state.putBool(player, "para_sleep", true);
+         state.putInt(player, "tics_to_door", 80);
       }
    }
 
    @SubscribeEvent
    public static void wakeup(PlayerWakeUpEvent event) {
-      sleep = false;
+      state.putBool(event.getEntity(), "para_sleep", false);
    }
 
    @SubscribeEvent
@@ -199,16 +203,22 @@ public class paranoia {
 
    @SubscribeEvent
    public static void start_break(BreakSpeed event) {
-      tics--;
+      Player player = event.getEntity();
+      int tics = state.getInt(player, "para_break_tics") - 1;
       if (random.nextInt(1, 10000) == 1 && tics <= 0) {
          steps_must_be = true;
          tics = 10000;
       }
+
+      state.putInt(player, "para_break_tics", tics);
    }
 
    @SubscribeEvent
    public static void block_event(EntityPlaceEvent event) {
-      tics_without_events = 200;
+      if (event.getEntity() instanceof Player player) {
+         state.putInt(player, "tics_without_events", 200);
+      }
+
       if (random.nextInt(1, 120) == 5) {
          event.setCanceled(true);
       }
@@ -242,12 +252,12 @@ public class paranoia {
       Player player = event.player;
       CompoundTag global_tag = event.player.getPersistentData();
       CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
-      if (player.level().isClientSide()) {
+      boolean client = player.level().isClientSide();
+      // Per-player scheduler timers (server-authoritative).
+      int time_to_event = tag.getInt("time_to_event");
+      int tics_without_events = tag.getInt("tics_without_events");
+      if (client) {
          tics_from_last_event--;
-         tics_without_events--;
-         if (player.tickCount % 40 == 0 && terror_beginning.away_house && !labyrinth_event.in_lab && !terror_beginning.his_hunt) {
-            time_to_event--;
-         }
 
          if (force_open_door_must_be) {
             force_open_door_must_be = false;
@@ -259,6 +269,11 @@ public class paranoia {
             steps_must_be = false;
          }
       } else {
+         tics_without_events--;
+         if (player.tickCount % 40 == 0 && terror_beginning.away_house(player) && !labyrinth_event.in_lab(player) && !terror_beginning.his_hunt(player)) {
+            time_to_event--;
+         }
+
          if (player.getY() < 55.0 && player.tickCount % 40 == 0) {
             set_seconds_to_call(player, get_seconds_to_call(player) - 1);
          }
@@ -268,12 +283,12 @@ public class paranoia {
          }
       }
 
-      if (time_to_event <= 0 && terror_beginning.away_house && !labyrinth_event.in_lab && !player.level().isClientSide() && tics_without_events <= 0) {
+      if (time_to_event <= 0 && terror_beginning.away_house(player) && !labyrinth_event.in_lab(player) && !player.level().isClientSide() && tics_without_events <= 0) {
          int i = random.nextInt(1, 27);
          switch (i) {
             case 1:
                if (tag.getInt("tool_break") < 1) {
-                  tool_break.event_in_process = true;
+                  tool_break.set_active(player, true);
                   System.out.println("must be event");
                   tag.putInt("tool_break", tag.getInt("tool_break") + 1);
                   time_to_event = random.nextInt(min_time, max_time);
@@ -299,7 +314,7 @@ public class paranoia {
                break;
             case 4:
                if (tag.getInt("circle_christ") < 1) {
-                  circle_christ.event_in_process = true;
+                  circle_christ.set_active(player, true);
                   System.out.println("must be event");
                   tag.putInt("circle_christ", tag.getInt("circle_christ") + 1);
                   time_to_event = random.nextInt(min_time, max_time);
@@ -308,7 +323,7 @@ public class paranoia {
                break;
             case 5:
                if (tag.getInt("fire_steps") < 1) {
-                  fire_steps.tics_of_event = random.nextInt(300, 500);
+                  fire_steps.set_tics(player, random.nextInt(300, 500));
                   System.out.println("must be event");
                   tag.putInt("fire_steps", tag.getInt("fire_steps") + 1);
                   time_to_event = random.nextInt(min_time, max_time);
@@ -341,7 +356,7 @@ public class paranoia {
                break;
             case 7:
                if (tag.getInt("periferia") < 1) {
-                  periferia.event_in_process = true;
+                  periferia.set_active(player, true);
                   tag.putInt("periferia", tag.getInt("periferia") + 1);
                   time_to_event = random.nextInt(min_time, max_time);
                   tics_from_last_event = 3000;
@@ -349,14 +364,14 @@ public class paranoia {
                break;
             case 8:
                if (tag.getInt("thunder_behind") < 2) {
-                  thunder_behind.event_in_process = true;
+                  thunder_behind.set_active(player, true);
                   time_to_event = random.nextInt(min_time, max_time);
                   tics_from_last_event = 3000;
                }
                break;
             case 9:
                if (tag.getInt("forge_revenge") < 1) {
-                  forge_revenge.event_in_process = true;
+                  forge_revenge.set_active(player, true);
                   tag.putInt("forge_revenge", tag.getInt("forge_revenge") + 1);
                   time_to_event = random.nextInt(min_time, max_time);
                   tics_from_last_event = 3000;
@@ -364,22 +379,22 @@ public class paranoia {
                break;
             case 10:
                if (tag.getInt("panic") < 1) {
-                  panic.event_in_process = true;
+                  panic.set_active(player, true);
                   time_to_event = random.nextInt(min_time, max_time);
                   tics_from_last_event = 3000;
                }
                break;
             case 11:
                if (tag.getInt("notice_in_inventory") < 1) {
-                  notice_in_inventory.event_in_process = true;
+                  notice_in_inventory.set_active(player, true);
                   time_to_event = random.nextInt(min_time, max_time);
                   tag.putInt("notice_in_inventory", tag.getInt("notice_in_inventory") + 1);
                   tics_from_last_event = 3000;
                }
                break;
             case 12:
-               if (remove_entities.tics_without_life < 0 && tag.getInt("remove_entities") < 1) {
-                  remove_entities.tics_without_life = 4800;
+               if (state.getInt(player, "tics_without_life") < 0 && tag.getInt("remove_entities") < 1) {
+                  remove_entities.set_tics_without_life(player, 4800);
                   time_to_event = random.nextInt(min_time, max_time);
                   tag.putInt("remove_entities", tag.getInt("remove_entities") + 1);
                   break;
@@ -437,7 +452,7 @@ public class paranoia {
             case 19:
                if (!tag.getBoolean("angel_sound")) {
                   System.out.println("angel");
-                  angel_sound_event.event_in_process = true;
+                  angel_sound_event.set_active(player, true);
                   time_to_event = random.nextInt(min_time, max_time);
                   tag.putBoolean("angel_sound", true);
                   global_tag.put("flywheel_of_terror", tag);
@@ -455,7 +470,7 @@ public class paranoia {
             case 21:
                if (!tag.getBoolean("exist_terror")) {
                   System.out.println("exist");
-                  exist_terror_event.event_in_process = true;
+                  exist_terror_event.set_active(player, true);
                   time_to_event = random.nextInt(min_time, max_time);
                   tag.putBoolean("exist_terror", true);
                   global_tag.put("flywheel_of_terror", tag);
@@ -465,7 +480,7 @@ public class paranoia {
             case 22:
                if (!tag.getBoolean("below")) {
                   System.out.println("below");
-                  below_event.event_in_process = true;
+                  below_event.set_active(player, true);
                   time_to_event = random.nextInt(min_time, max_time);
                   global_tag.put("flywheel_of_terror", tag);
                   tics_from_last_event = 3000;
@@ -473,7 +488,7 @@ public class paranoia {
                break;
             case 23:
                if (!tag.getBoolean("apoc")) {
-                  apocalypsis_event.event_in_process = true;
+                  apocalypsis_event.set_active(player, true);
                   time_to_event = random.nextInt(min_time, max_time);
                   global_tag.put("flywheel_of_terror", tag);
                   tics_from_last_event = 3000;
@@ -511,8 +526,8 @@ public class paranoia {
          player.playSound((SoundEvent)register_sounds.breath1.get(), 1.0F, 1.0F);
       }
 
-      if (!player.level().isClientSide() && sleep) {
-         tics_to_door--;
+      if (!client && tag.getBoolean("para_sleep")) {
+         int tics_to_door = tag.getInt("tics_to_door") - 1;
          if (tics_to_door == 0) {
             for (double x = player.getX() - 10.0; x <= player.getX() + 10.0; x++) {
                for (double y = player.getY() - 10.0; y <= player.getY() + 10.0; y++) {
@@ -526,9 +541,18 @@ public class paranoia {
                }
             }
 
-            sleep = false;
+            tag.putBoolean("para_sleep", false);
             tics_to_door = -32;
          }
+
+         tag.putInt("tics_to_door", tics_to_door);
+      }
+
+      // Persist the per-player scheduler timers (server-authoritative).
+      if (!client) {
+         tag.putInt("time_to_event", time_to_event);
+         tag.putInt("tics_without_events", tics_without_events);
+         global_tag.put("flywheel_of_terror", tag);
       }
    }
 
@@ -559,7 +583,7 @@ public class paranoia {
       @SubscribeEvent
       public static void view(Post event) {
          if (tics_of_call > 0) {
-            time_to_event++;
+            // (Scheduler pause during a call is now server-authoritative; handled in Phase 3.)
             int width = Minecraft.getInstance().getWindow().getGuiScaledWidth();
             int height = Minecraft.getInstance().getWindow().getGuiScaledHeight();
             event.getGuiGraphics()

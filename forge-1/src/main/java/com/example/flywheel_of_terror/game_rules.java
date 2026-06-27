@@ -35,8 +35,8 @@ public class game_rules {
 
    @SubscribeEvent
    public static void onMobDrops(LivingDropsEvent event) {
-      if (terror_end.phase == 0) {
-         if (event.getSource().getEntity() instanceof Player player) {
+      if (event.getSource().getEntity() instanceof Player player) {
+         if (terror_end.phase(player) == 0) {
             CompoundTag global_tag = player.getPersistentData();
             CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
             if (tag.getInt("state_of_lore") != 0) {
@@ -83,7 +83,7 @@ public class game_rules {
    @SubscribeEvent
    public static void onFoodEaten(Finish event) {
       if (event.getEntity() instanceof Player player) {
-         if (terror_end.phase == 0) {
+         if (terror_end.phase(player) == 0) {
             ItemStack stack = event.getItem();
             Item item = stack.getItem();
             FoodProperties foodProps = item.getFoodProperties();
@@ -111,8 +111,8 @@ public class game_rules {
 
    @SubscribeEvent
    public static void every(PlayerTickEvent event) {
-      if (terror_end.phase == 0) {
-         Player player = event.player;
+      Player player = event.player;
+      if (terror_end.phase(player) == 0) {
          DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> client_safe.gameRulesCameraTick());
 
          if (!player.level().isClientSide()) {
@@ -142,8 +142,8 @@ public class game_rules {
 
    @SubscribeEvent
    public static void onKillTest(LivingDeathEvent event) {
-      if (terror_end.phase == 0) {
-         if (event.getSource().getEntity() != null && event.getSource().getEntity() instanceof Player player) {
+      if (event.getSource().getEntity() != null && event.getSource().getEntity() instanceof Player player) {
+         if (terror_end.phase(player) == 0) {
             CompoundTag global_tag = player.getPersistentData();
             CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
             LivingEntity entity = event.getEntity();

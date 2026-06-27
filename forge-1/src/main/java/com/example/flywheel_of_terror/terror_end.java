@@ -9,7 +9,11 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class terror_end {
-   public static int phase = 0;
+   // Was a shared "public static int phase"; the value already lived in each player's NBT
+   // (nbt_adresses.phase_nbt), so this is now a per-player read.
+   public static int phase(Player player) {
+      return state.getInt(player, nbt_adresses.phase_nbt);
+   }
 
    public static boolean events_end(Player player) {
       CompoundTag global_tag = player.getPersistentData();
@@ -49,7 +53,7 @@ public class terror_end {
       CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
       boolean client = player.level().isClientSide();
       if (!client) {
-         phase = tag.getInt(nbt_adresses.phase_nbt);
+         int phase = tag.getInt(nbt_adresses.phase_nbt);
          if (player.tickCount % 40 == 0) {
             tag.putInt(nbt_adresses.seconds_to_die_oh_no, tag.getInt(nbt_adresses.seconds_to_die_oh_no) - 1);
             global_tag.put("flywheel_of_terror", tag);

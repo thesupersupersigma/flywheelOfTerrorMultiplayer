@@ -27,6 +27,7 @@ import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.CreditsAndAttributionScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
 import net.minecraft.client.renderer.CubeMap;
 import net.minecraft.client.renderer.PanoramaRenderer;
@@ -162,12 +163,18 @@ public class fake_main_menu extends Screen {
             .bounds(this.width / 2 - 100, p_96764_, 200, 20)
             .build()
       );
+      // "hunt" = join a multiplayer server. Guarded by the same parental-controls / ban check vanilla
+      // uses for its multiplayer button (getMultiplayerDisabledReason()).
       Component component = this.getMultiplayerDisabledReason();
       boolean flag = component == null;
+      Button huntButton = (Button)this.addRenderableWidget(
+         Button.builder(Component.literal("hunt"), p_hunt_ -> this.minecraft.setScreen(new JoinMultiplayerScreen(this)))
+            .bounds(this.width / 2 - 100, p_96764_ + p_96765_ * 1, 200, 20)
+            .build()
+      );
+      huntButton.active = flag;
       if (component != null) {
-         Tooltip.create(component);
-      } else {
-         Object var10000 = null;
+         huntButton.setTooltip(Tooltip.create(component));
       }
    }
 

@@ -79,7 +79,7 @@ public class family {
          for (Villager vill : player.level().getEntitiesOfClass(Villager.class, player.getBoundingBox().inflate(5.0))) {
             if (vill.getPersistentData().getBoolean("family")) {
                tics_of_house = 120;
-               remove_entities.tics_without_life = 600;
+               remove_entities.set_tics_without_life(player, 600);
 
                for (Villager vill2 : player.level().getEntitiesOfClass(Villager.class, player.getBoundingBox().inflate(50.0))) {
                   if (vill2.getPersistentData().getBoolean("family")) {

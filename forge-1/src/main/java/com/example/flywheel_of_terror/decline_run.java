@@ -16,7 +16,7 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
    bus = Bus.FORGE
 )
 public class decline_run {
-   public static int tick_to_knock = 100;
+   // tick_to_knock → per-player NBT ("decline_knock"); sound_must_be stays static (A/V).
    public static boolean sound_must_be = false;
 
    @SubscribeEvent
@@ -28,7 +28,8 @@ public class decline_run {
       }
 
       if (!player.level().isClientSide()) {
-         tick_to_knock--;
+         int tick_to_knock = state.getInt(player, "decline_knock") - 1;
+         state.putInt(player, "decline_knock", tick_to_knock);
          boolean no_any_blocks = true;
          CompoundTag global_tag = player.getPersistentData();
          CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
@@ -52,11 +53,11 @@ public class decline_run {
             && tick_to_knock <= 0
             && player.onGround()
             && no_any_blocks
-            && !terror_continue.near_maze
+            && !terror_continue.near_maze(player)
             && player.getY() > 50.0
             && !advanced_baron_detector.player_is_baron(player)) {
             player.teleportTo(player.getX() + 2.0, player.getY(), player.getZ());
-            tick_to_knock = 200;
+            state.putInt(player, "decline_knock", 200);
             sound_must_be = true;
             player.sendSystemMessage(Component.literal("Are you going somewhere?"));
             player.hurt(player.damageSources().generic(), 1.0F);

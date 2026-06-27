@@ -1,6 +1,7 @@
 package com.example.flywheel_of_terror;
 
 import java.util.Random;
+import net.minecraft.core.BlockPos;
 import net.minecraft.client.sounds.SoundEngine;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sounds.SoundEvents;
@@ -79,11 +80,9 @@ public class flywheel_of_terror {
                (double)player.level().getSharedSpawnPos().getY(),
                (double)player.level().getSharedSpawnPos().getZ()
             );
-         } else if (house_defend.bed_here) {
-            int x = house_defend.pos_of_bed.getX();
-            int y = house_defend.pos_of_bed.getY();
-            int z = house_defend.pos_of_bed.getZ();
-            player.teleportTo((double)x, (double)y, (double)z);
+         } else if (house_defend.bed_here(player)) {
+            BlockPos bed = house_defend.bed_pos(player);
+            player.teleportTo((double)bed.getX(), (double)bed.getY(), (double)bed.getZ());
          }
       }
    }

@@ -13,8 +13,6 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class oh_no_stalker_event {
-   public static BlockPos nearest_tree;
-
    public static void do_event(Player player) {
       oh_no_stalker oh_no = new oh_no_stalker((EntityType<? extends PathfinderMob>)add_humans.oh_no_stalker.get(), player.level());
       double x = (double)get_nearest_tree(player).getX();
@@ -56,9 +54,4 @@ public class oh_no_stalker_event {
          || block == Blocks.ACACIA_LOG;
    }
 
-   @SubscribeEvent
-   public static void fing_trees(PlayerTickEvent event) {
-      Player player = event.player;
-      nearest_tree = get_nearest_tree(player);
-   }
 }

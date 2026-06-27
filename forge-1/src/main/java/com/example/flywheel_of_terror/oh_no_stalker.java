@@ -50,13 +50,17 @@ public class oh_no_stalker extends PathfinderMob {
       super.tick();
       boolean client = this.level().isClientSide();
       boolean server = !this.level().isClientSide();
-      if (oh_no_stalker_event.nearest_tree != null && oh_no_stalker_event.nearest_tree.getY() == 0) {
+      // Per-player: the tree to hide behind is computed from this stalker's nearest player, not a
+      // shared global (was oh_no_stalker_event.nearest_tree).
+      Player nearestPlayer = this.level().getNearestPlayer(this, 400.0);
+      BlockPos nearest_tree = nearestPlayer != null ? oh_no_stalker_event.get_nearest_tree(nearestPlayer) : null;
+      if (nearest_tree != null && nearest_tree.getY() == 0) {
          MobEffectInstance vanish = new MobEffectInstance(MobEffects.INVISIBILITY, 10, 10, false, true, false);
          this.addEffect(vanish);
       }
 
-      if (this.tickCount % 200 == 0 && oh_no_stalker_event.nearest_tree != null) {
-         this.target_tree = oh_no_stalker_event.nearest_tree;
+      if (this.tickCount % 200 == 0 && nearest_tree != null) {
+         this.target_tree = nearest_tree;
          MobEffectInstance vanish = new MobEffectInstance(MobEffects.INVISIBILITY, 10, 10, false, true, false);
          this.addEffect(vanish);
       }

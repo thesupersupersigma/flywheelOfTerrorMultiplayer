@@ -13,15 +13,15 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class advanced_baron_detector {
+   // tics_to_destroy_tower → per-player NBT ("baron_tower_tics"), server-authoritative.
    public static Random random = new Random();
-   public static int tics_to_destroy_tower = -2;
 
    public static int get_delay_to_destroy_tower() {
       return 4000;
    }
 
    public static boolean may_destroy_tower(Player player) {
-      return tics_to_destroy_tower <= 0 && player.onGround() && player.getY() > 55.0;
+      return state.getInt(player, "baron_tower_tics") <= 0 && player.onGround() && player.getY() > 55.0;
    }
 
    public static boolean player_is_baron(Player player) {
@@ -60,7 +60,7 @@ public class advanced_baron_detector {
    }
 
    public static void destroy_baron_tower(Player player, int number_of_punishment) {
-      tics_to_destroy_tower = get_delay_to_destroy_tower();
+      state.putInt(player, "baron_tower_tics", get_delay_to_destroy_tower());
       switch (number_of_punishment) {
          case 1:
             for (double x = player.getX() - 2.0; x <= player.getX() + 2.0; x++) {
@@ -90,9 +90,8 @@ public class advanced_baron_detector {
       Level level = player.level();
       CompoundTag global_tag = player.getPersistentData();
       CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
-      if (player.level().isClientSide()) {
-         tics_to_destroy_tower--;
-      } else {
+      if (!player.level().isClientSide()) {
+         state.putInt(player, "baron_tower_tics", state.getInt(player, "baron_tower_tics") - 1);
          if (information.get_name_of_the_player(player).contains("baron")) {
             tag.putBoolean("baron", true);
          }

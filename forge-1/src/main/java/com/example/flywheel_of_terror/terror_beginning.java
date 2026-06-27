@@ -36,29 +36,47 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
    bus = Bus.FORGE
 )
 public class terror_beginning {
-   public static boolean house_builded_now = false;
-   public static int count_of_player_block;
-   public static boolean near_house = false;
-   public static boolean first_message_was = false;
+   // Phase 2: per-player gameplay state moved into each player's "flywheel_of_terror" NBT compound.
+   // The remaining statics are the cross-side audio/visual flags (set on the server tick, read on
+   // the client tick of the same handler) — those are deferred to the Phase 3 networking layer.
    public static boolean sound_terror = false;
    public static int tics_to_next_sound = 20;
-   public static int count_of_victims = 11;
-   public static int killed_victims = 0;
    public static Random random = new Random();
-   public static int tics_to_next_house = 30;
-   public static boolean away_house = true;
-   public static boolean far_away_house = true;
    public static boolean sound_must_be = false;
-   public static boolean his_hunt = false;
    public static boolean hunt_sound_must_be = false;
    public static boolean sound_house_destroyed = false;
+
+   // Per-player accessors used by other classes (replace the old shared statics).
+   public static boolean his_hunt(Player player) {
+      return state.getBool(player, "his_hunt");
+   }
+
+   public static boolean first_message_was(Player player) {
+      return state.getBool(player, "first_message_was");
+   }
+
+   public static boolean near_house(Player player) {
+      return state.getBool(player, "near_house");
+   }
+
+   public static boolean away_house(Player player) {
+      return state.getBool(player, "away_house");
+   }
+
+   public static boolean far_away_house(Player player) {
+      return state.getBool(player, "far_away_house");
+   }
+
+   public static void set_his_hunt(Player player, boolean value) {
+      state.putBool(player, "his_hunt", value);
+   }
 
    public static void destroy_house(Player player) {
       CompoundTag global_tag = player.getPersistentData();
       CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
-      tics_to_next_house = 150;
-      first_message_was = false;
-      killed_victims = 0;
+      tag.putInt("tics_to_next_house", 150);
+      tag.putBoolean("first_message_was", false);
+      tag.putInt("killed_victims", 0);
       System.out.println("HOUSE DESTROYED");
       double xx = (double)tag.getInt("house_X");
       double yy = (double)tag.getInt("house_Y");
@@ -87,32 +105,33 @@ public class terror_beginning {
 
    @SubscribeEvent
    public static void nobreak(BreakEvent event) {
-      if (his_hunt) {
+      if (event.getPlayer() != null && his_hunt(event.getPlayer())) {
          event.setCanceled(true);
       }
    }
 
    @SubscribeEvent
    public static void noplace(EntityPlaceEvent event) {
-      if (his_hunt || first_message_was) {
+      if (event.getEntity() instanceof Player player && (his_hunt(player) || first_message_was(player))) {
          event.setCanceled(true);
       }
    }
 
    @SubscribeEvent
    public static void sleep(PlayerSleepInBedEvent event) {
-      if (event.getEntity().level() instanceof ServerLevel serv && serv.getDayTime() > 12000L && serv.getDayTime() < 14000L) {
-         event.getEntity().level().destroyBlock(event.getPos(), true);
+      Player player = event.getEntity();
+      if (player.level() instanceof ServerLevel serv && serv.getDayTime() > 12000L && serv.getDayTime() < 14000L) {
+         player.level().destroyBlock(event.getPos(), true);
       }
 
-      if (first_message_was) {
-         event.getEntity().level().destroyBlock(event.getPos(), true);
-         event.getEntity().displayClientMessage(Component.literal("Hunting first"), true);
+      if (first_message_was(player)) {
+         player.level().destroyBlock(event.getPos(), true);
+         player.displayClientMessage(Component.literal("Hunting first"), true);
       }
 
-      if (!near_house) {
-         event.getEntity().level().destroyBlock(event.getPos(), true);
-         event.getEntity().displayClientMessage(Component.literal("sleeping outside your home guarantees your capture"), true);
+      if (!near_house(player)) {
+         player.level().destroyBlock(event.getPos(), true);
+         player.displayClientMessage(Component.literal("sleeping outside your home guarantees your capture"), true);
       }
    }
 
@@ -131,24 +150,34 @@ public class terror_beginning {
          && player.level() instanceof ServerLevel serv
          && serv.getDayTime() > 14000L
          && serv.getDayTime() < 17000L
-         && first_message_was) {
-         killed_victims++;
+         && first_message_was(player)) {
+         int killed_victims = state.getInt(player, "killed_victims") + 1;
+         int count_of_victims = state.getInt(player, "count_of_victims");
          player.displayClientMessage(Component.literal(killed_victims + "/" + count_of_victims), true);
          if (killed_victims >= count_of_victims) {
             killed_victims = 0;
             count_of_victims = 11;
-            first_message_was = false;
+            state.putBool(player, "first_message_was", false);
          }
+
+         state.putInt(player, "killed_victims", killed_victims);
+         state.putInt(player, "count_of_victims", count_of_victims);
       }
    }
 
    @SubscribeEvent
    public static void hunting(PlayerTickEvent event) {
-      if (terror_end.phase == 0) {
-         CompoundTag global_tag = event.player.getPersistentData();
+      Player player = event.player;
+      if (terror_end.phase(player) == 0) {
+         CompoundTag global_tag = player.getPersistentData();
          CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
-         Player player = event.player;
          boolean client = player.level().isClientSide();
+         // Per-player gameplay state pulled into locals; written back to NBT at the end of the tick.
+         boolean his_hunt = state.getBool(player, "his_hunt");
+         boolean first_message_was = state.getBool(player, "first_message_was");
+         boolean near_house = state.getBool(player, "near_house");
+         int killed_victims = state.getInt(player, "killed_victims");
+         int count_of_victims = state.getInt(player, "count_of_victims");
          if (client && hunt_sound_must_be) {
             player.playSound((SoundEvent)register_sounds.his_hunt.get(), 1.0F, 1.0F);
             hunt_sound_must_be = false;
@@ -165,7 +194,7 @@ public class terror_beginning {
          }
 
          if (near_house && !event.player.level().isClientSide() && event.player.level() instanceof ServerLevel serv) {
-            if (serv.getDayTime() > 14000L && serv.getDayTime() < 14300L && !labyrinth_event.in_lab) {
+            if (serv.getDayTime() > 14000L && serv.getDayTime() < 14300L && !labyrinth_event.in_lab(player)) {
                if (!first_message_was) {
                   count_of_victims = random.nextInt(5, 11);
                }
@@ -183,6 +212,8 @@ public class terror_beginning {
                his_hunt = true;
                sound_house_destroyed = true;
                destroy_house(player);
+               first_message_was = false;
+               killed_victims = 0;
                serv.setDayTime(17100L);
             }
 
@@ -191,6 +222,7 @@ public class terror_beginning {
                first_message_was = false;
                sound_house_destroyed = true;
                destroy_house(player);
+               killed_victims = 0;
             }
          }
 
@@ -199,7 +231,7 @@ public class terror_beginning {
                serv.setDayTime(1L);
             }
 
-            if (serv.getDayTime() > 14000L && serv.getDayTime() < 14300L && !near_house && !labyrinth_event.in_lab) {
+            if (serv.getDayTime() > 14000L && serv.getDayTime() < 14300L && !near_house && !labyrinth_event.in_lab(player)) {
                if (!first_message_was) {
                   count_of_victims = random.nextInt(5, 11);
                }
@@ -263,14 +295,23 @@ public class terror_beginning {
 
             sound_terror = false;
          }
+
+         // Persist the per-player gameplay state mutated above (only meaningful server-side).
+         if (!client) {
+            state.putBool(player, "his_hunt", his_hunt);
+            state.putBool(player, "first_message_was", first_message_was);
+            state.putInt(player, "killed_victims", killed_victims);
+            state.putInt(player, "count_of_victims", count_of_victims);
+         }
       }
    }
 
    @SubscribeEvent
    public static void inhouse(PlayerTickEvent event) {
-      tics_to_next_house--;
       Player player = event.player;
       if (!player.level().isClientSide()) {
+         int tics_to_next_house = state.getInt(player, "tics_to_next_house") - 1;
+         state.putInt(player, "tics_to_next_house", tics_to_next_house);
          CompoundTag global_tag = event.player.getPersistentData();
          CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
          int count_of_blocks = 0;
@@ -388,9 +429,8 @@ public class terror_beginning {
             }
          }
 
-         away_house = context_away_house;
-         far_away_house = context_far_away_house;
-         global_tag.put("flywheel_of_terror", tag);
+         tag.putBoolean("away_house", context_away_house);
+         tag.putBoolean("far_away_house", context_far_away_house);
          if (dooris) {
             count_of_blocks += 20;
          }
@@ -407,13 +447,12 @@ public class terror_beginning {
             count_of_blocks += 10;
          }
 
-         count_of_player_block = count_of_blocks;
-         near_house = context_near_house;
-         if (count_of_player_block >= 90 && !tag.getBoolean("builded")) {
-            house_builded_now = true;
+         tag.putBoolean("near_house", context_near_house);
+         if (count_of_blocks >= 90 && !tag.getBoolean("builded")) {
+            tag.putBoolean("house_builded_now", true);
          }
 
-         if (count_of_player_block >= 90 && tag.getBoolean("builded") && away_house) {
+         if (count_of_blocks >= 90 && tag.getBoolean("builded") && context_away_house) {
             for (double x = player.getX() - 8.0; x <= player.getX() + 8.0; x++) {
                for (double y = player.getY() - 8.0; y <= player.getY() + 8.0; y++) {
                   for (double zxxxx = player.getZ() - 8.0; zxxxx <= player.getZ() + 8.0; zxxxx++) {
@@ -440,6 +479,8 @@ public class terror_beginning {
                );
             event.player.displayClientMessage(Component.literal("§c you already have a house."), true);
          }
+
+         global_tag.put("flywheel_of_terror", tag);
       }
    }
 
@@ -448,14 +489,15 @@ public class terror_beginning {
       Player player = event.player;
       CompoundTag global_tag = player.getPersistentData();
       CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
-      if (!player.level().isClientSide() && !tag.getBoolean("builded") && house_builded_now && tics_to_next_house <= 0) {
+      if (!player.level().isClientSide() && !tag.getBoolean("builded") && tag.getBoolean("house_builded_now") && tag.getInt("tics_to_next_house") <= 0) {
          tag.putBoolean("builded", true);
          boolean bedrock_placed = false;
-         house_builded_now = false;
+         tag.putBoolean("house_builded_now", false);
          System.out.println("HOUSE IS BUILDED");
-         terror_continue.tics_cooldown = 400;
-         away_house = false;
-         terror_continue.need_try = false;
+         // terror_continue per-player cooldown / retry flags (same NBT keys terror_continue reads).
+         tag.putInt("tics_cooldown", 400);
+         tag.putBoolean("away_house", false);
+         tag.putBoolean("need_try", false);
 
          for (double x = player.getX() - 10.0; x <= player.getX() + 10.0; x++) {
             for (double y = player.getY() - 10.0; y <= player.getY() + 10.0; y++) {

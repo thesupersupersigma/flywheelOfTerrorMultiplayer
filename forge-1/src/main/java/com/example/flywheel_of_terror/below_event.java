@@ -19,25 +19,24 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
    bus = Bus.FORGE
 )
 public class below_event {
-   public static boolean event_in_process = false;
-   public static boolean event_in_process2 = false;
+   // Per-player state → NBT ("below_active/2", "below_escape", "below_time_to_end", "below_XC/ZC",
+   // "below_height"). sound_must_be stays a static cross-side A/V flag (Phase 3).
    public static boolean sound_must_be = false;
-   public static int time_to_end = 29;
-   public static boolean exclude_escape = false;
-   public static int XC;
-   public static int ZC;
-   public static double height = 0.0;
+
+   public static void set_active(Player player, boolean value) {
+      state.putBool(player, "below_active", value);
+   }
 
    @SubscribeEvent
    public static void declineblocks(EntityPlaceEvent event) {
-      if (event.getEntity() instanceof Player player && exclude_escape) {
+      if (event.getEntity() instanceof Player player && state.getBool(player, "below_escape")) {
          event.setCanceled(true);
       }
    }
 
    @SubscribeEvent
    public static void declinedamage(LivingDamageEvent event) {
-      if (event.getEntity() instanceof Player player && exclude_escape) {
+      if (event.getEntity() instanceof Player player && state.getBool(player, "below_escape")) {
          event.setCanceled(true);
       }
    }
@@ -47,16 +46,21 @@ public class below_event {
       Player player = event.player;
       CompoundTag global_tag = player.getPersistentData();
       CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
+      boolean exclude_escape = tag.getBoolean("below_escape");
+      int time_to_end = tag.getInt("below_time_to_end");
+      double height = tag.getDouble("below_height");
       if (player.level().isClientSide() && player.tickCount % 40 == 0 && exclude_escape) {
-         time_to_end--;
+         tag.putInt("below_time_to_end", time_to_end - 1);
+         global_tag.put("flywheel_of_terror", tag);
       }
 
       if (exclude_escape && time_to_end >= 3 && player.getY() < height - 8.0 && !player.level().isClientSide()) {
-         player.teleportTo((double)XC, height + 5.0, (double)ZC);
+         player.teleportTo((double)tag.getInt("below_XC"), height + 5.0, (double)tag.getInt("below_ZC"));
       }
 
       if (time_to_end <= 0 && exclude_escape && !player.level().isClientSide()) {
-         exclude_escape = false;
+         tag.putBoolean("below_escape", false);
+         global_tag.put("flywheel_of_terror", tag);
          MobEffectInstance blind = new MobEffectInstance(MobEffects.BLINDNESS, 4, 10, false, true, false);
          player.addEffect(blind);
       }
@@ -66,19 +70,19 @@ public class below_event {
          sound_must_be = false;
       }
 
-      if (event_in_process && player.getY() > 20.0 && player.level().isClientSide()) {
+      if (tag.getBoolean("below_active") && player.getY() > 20.0 && player.level().isClientSide()) {
          paranoia.set_seconds_to_call(player, 60);
-         height = player.getY() - 60.0;
+         tag.putDouble("below_height", player.getY() - 60.0);
+         tag.putBoolean("below_active", false);
+         tag.putBoolean("below_active2", true);
          global_tag.put("flywheel_of_terror", tag);
          player.heal(20.0F);
          player.playSound((SoundEvent)register_sounds.below1.get(), 1.0F, 1.0F);
          MobEffectInstance blind = new MobEffectInstance(MobEffects.BLINDNESS, 740, 10, false, true, false);
          player.addEffect(blind);
-         event_in_process = false;
-         event_in_process2 = true;
       }
 
-      if (event_in_process2 && player.tickCount % 5 == 0 && !player.level().isClientSide()) {
+      if (tag.getBoolean("below_active2") && player.tickCount % 5 == 0 && !player.level().isClientSide()) {
          tag.putBoolean("below", true);
 
          for (double x = player.getX() - 2.0; x <= player.getX() + 2.0; x++) {
@@ -103,7 +107,7 @@ public class below_event {
          }
 
          player.teleportTo(player.getX(), player.getY() - 1.0, player.getZ());
-         if (player.getY() <= height) {
+         if (player.getY() <= tag.getDouble("below_height")) {
             sound_must_be = true;
 
             for (double x = player.getX() - 20.0; x <= player.getX() + 20.0; x++) {
@@ -115,8 +119,6 @@ public class below_event {
                }
             }
 
-            exclude_escape = true;
-
             for (double x = player.getX() - 1.0; x <= player.getX() + 1.0; x++) {
                for (double y = player.getY() - 4.0; y <= player.getY() - 4.0; y++) {
                   for (double z = player.getZ() - 1.0; z <= player.getZ() + 1.0; z++) {
@@ -126,10 +128,12 @@ public class below_event {
                }
             }
 
-            XC = (int)player.getX();
-            ZC = (int)player.getZ();
-            exclude_escape = true;
-            event_in_process2 = false;
+            tag.putInt("below_XC", (int)player.getX());
+            tag.putInt("below_ZC", (int)player.getZ());
+            tag.putBoolean("below_escape", true);
+            tag.putInt("below_time_to_end", 29);
+            tag.putBoolean("below_active2", false);
+            global_tag.put("flywheel_of_terror", tag);
             paranoia.set_seconds_to_call(player, 60);
          }
       }

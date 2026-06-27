@@ -14,13 +14,15 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
    bus = Bus.FORGE
 )
 public class angel_sound_event {
-   public static boolean event_in_process = false;
+   public static void set_active(Player player, boolean value) {
+      state.putBool(player, "angel_sound_active", value);
+   }
 
    @SubscribeEvent
    public static void do_event(PlayerTickEvent event) {
       Player player = event.player;
       if (!player.level().isClientSide()) {
-         if (event_in_process) {
+         if (state.getBool(player, "angel_sound_active")) {
             CompoundTag global_tag = player.getPersistentData();
             CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
             tag.putBoolean("angel_sound", true);
@@ -29,7 +31,7 @@ public class angel_sound_event {
                .playSound(
                   null, player.getX(), player.getY(), player.getZ(), (SoundEvent)register_sounds.angel_sound.get(), SoundSource.PLAYERS, 1.0F, 1.0F
                );
-            event_in_process = false;
+            state.putBool(player, "angel_sound_active", false);
          }
       }
    }

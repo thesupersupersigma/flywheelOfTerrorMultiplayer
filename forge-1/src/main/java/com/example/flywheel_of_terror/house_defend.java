@@ -20,11 +20,19 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 @EventBusSubscriber
 public class house_defend {
    public static Random random = new Random();
+   // Tuning constants (never mutated) — fine to remain static.
    public static int blocks_repair_per_time = 1;
-   public static float breaked_for_last_seconds = 0.0F;
    public static int required_to_thunder = 8;
-   public static boolean bed_here = false;
-   public static BlockPos pos_of_bed;
+
+   // Per-player bed claim, read by flywheel_of_terror.hell().
+   public static boolean bed_here(Player player) {
+      return state.getBool(player, "bed_here");
+   }
+
+   public static BlockPos bed_pos(Player player) {
+      CompoundTag tag = state.tag(player);
+      return new BlockPos(tag.getInt("bed_x"), tag.getInt("bed_y"), tag.getInt("bed_z"));
+   }
 
    @SubscribeEvent
    public static void breakb(BreakEvent event) {
@@ -34,7 +42,8 @@ public class house_defend {
          CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
          String coordinates = event.getPos().getX() + "," + event.getPos().getY() + "," + event.getPos().getZ();
          if (tag.getBoolean(coordinates + "house") || tag.getBoolean(coordinates + "destroyed_house")) {
-            breaked_for_last_seconds++;
+            tag.putFloat("breaked_for_last_seconds", tag.getFloat("breaked_for_last_seconds") + 1.0F);
+            global_tag.put("flywheel_of_terror", tag);
          }
       }
    }
@@ -45,6 +54,7 @@ public class house_defend {
       if (!player.level().isClientSide()) {
          CompoundTag global_tag = event.player.getPersistentData();
          CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
+         float breaked_for_last_seconds = tag.getFloat("breaked_for_last_seconds");
          if (player.tickCount % 200 == 0 & breaked_for_last_seconds > 0.0F) {
             breaked_for_last_seconds--;
          }
@@ -53,6 +63,9 @@ public class house_defend {
             breaked_for_last_seconds -= 3.0F;
             information.thunder_player(player);
          }
+
+         tag.putFloat("breaked_for_last_seconds", breaked_for_last_seconds);
+         global_tag.put("flywheel_of_terror", tag);
 
          if (player.tickCount % 200 == 0 && tag.getBoolean("builded")) {
             boolean fire_finded = false;
@@ -103,16 +116,20 @@ public class house_defend {
 
                      if (player.level().getBlockState(pos).getBlock() instanceof BedBlock) {
                         bed_finded = true;
-                        pos_of_bed = new BlockPos((int)x, (int)y, (int)z);
+                        tag.putInt("bed_x", (int)x);
+                        tag.putInt("bed_y", (int)y);
+                        tag.putInt("bed_z", (int)z);
                      }
                   }
                }
             }
 
-            bed_here = bed_finded;
+            tag.putBoolean("bed_here", bed_finded);
             if (house_is_gone) {
                tag.putBoolean("builded", false);
             }
+
+            global_tag.put("flywheel_of_terror", tag);
 
             if (count_of_destroyed_house_blocks == 0) {
                return;

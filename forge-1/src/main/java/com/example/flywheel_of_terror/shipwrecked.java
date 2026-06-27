@@ -77,7 +77,7 @@ public class shipwrecked {
    }
 
    public static void do_ship_wrecked(Player player) {
-      paranoia.time_to_event += 300;
+      state.putInt(player, "time_to_event", state.getInt(player, "time_to_event") + 300);
       set_may_drown_player(player, true);
       set_shipwrecked(player, true);
       red_water = true;

@@ -261,9 +261,9 @@ public class horror_environment {
       if (!player.level().isClientSide()) {
          for (Entity mob : player.level().getEntitiesOfClass(Entity.class, player.getBoundingBox().inflate(300.0))) {
             CompoundTag tag = mob.getPersistentData();
-            if ((tag.getInt("lookatplayer") == 5 || terror_beginning.first_message_was || tag.getBoolean("family"))
+            if ((tag.getInt("lookatplayer") == 5 || terror_beginning.first_message_was(player) || tag.getBoolean("family"))
                && !(mob instanceof Player)
-               && all_look_at_you.tics_of_looking <= 0) {
+               && state.getInt(player, "tics_of_looking") <= 0) {
                mob.lookAt(Anchor.EYES, player.getEyePosition());
             }
 

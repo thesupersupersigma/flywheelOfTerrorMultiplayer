@@ -18,10 +18,11 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class something_wrong {
+   // seconds_to_change → per-player NBT (server-authoritative); tics_of_silence stays static
+   // (client sound-silencing A/V, Phase 3).
    public static Random random = new Random();
    public static final int min_time = 180;
    public static final int max_time = 360;
-   public static int seconds_to_change = random.nextInt(180, 360);
    public static int tics_of_silence = 0;
 
    @SubscribeEvent
@@ -155,15 +156,15 @@ public class something_wrong {
       Player player = event.player;
       boolean client = player.level().isClientSide();
       boolean server = !player.level().isClientSide();
-      if (client && player.tickCount % 40 == 0) {
-         seconds_to_change--;
-      }
-
       if (server) {
+         if (player.tickCount % 40 == 0) {
+            state.putInt(player, "seconds_to_change", state.getInt(player, "seconds_to_change") - 1);
+         }
+
          double xrot = (double)player.getXRot();
-         if (seconds_to_change <= 0 && terror_beginning.far_away_house && xrot > -10.0 && xrot < 10.0) {
+         if (state.getInt(player, "seconds_to_change") <= 0 && terror_beginning.far_away_house(player) && xrot > -10.0 && xrot < 10.0) {
             tics_of_silence = 100;
-            seconds_to_change = random.nextInt(180, 360);
+            state.putInt(player, "seconds_to_change", random.nextInt(180, 360));
             int i = random.nextInt(1, 3);
             switch (i) {
                case 1:

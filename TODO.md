@@ -48,20 +48,42 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
       `SoundEngineLoadEvent`/`FMLClientSetupEvent`, and `fake_menu_hook.ClientEvents` were already gated.)
       Still to verify: actual `runServer` smoke-boot + a client connecting.
 
-## Phase 2 — De-globalize per-player state
-- [ ] Build the full inventory of `public static` per-player fields (~120+; see CLAUDE.md §2.2/§2.3).
-- [ ] Choose storage: extend `"flywheel_of_terror"` NBT vs. capability/attachment keyed by UUID.
-- [ ] Migrate core controllers:
-  - [ ] `terror_beginning` (16 statics: `his_hunt`, `near_house`, `away_house`, `first_message_was`,
-        `killed_victims`, `count_of_victims`, …).
-  - [ ] `terror_continue` (`need_try`, `near_maze`, `tics_cooldown`, `xxx/yyy/zzz`, sound flags).
-  - [ ] `terror_end.phase` → per-player.
-  - [ ] `house_defend` (`breaked_for_last_seconds`, `bed_here`, `pos_of_bed`).
-  - [ ] `paranoia` (18 statics incl. the master `time_to_event` scheduler).
-  - [ ] `health_decrease.max_hp` + `count_of_kills` → per-player.
-- [ ] Migrate every event class's `event_in_process` / timer statics to per-player.
-- [ ] Scope world mutations per-player where feasible (`terror_beginning` & `apocalypsis_event`
-      global time/weather via `serv.m_8615_()` / `m_8606_()`).
+## Phase 2 — De-globalize per-player state  — DONE (build green)
+Storage chosen: extend the existing `"flywheel_of_terror"` NBT compound. Added a small `state`
+helper (`state.getInt/putInt/getBool/...`) wrapping that compound, plus per-class accessor methods
+(e.g. `terror_beginning.his_hunt(player)`, `terror_continue.near_maze(player)`,
+`labyrinth_event.in_lab(player)`, `house_defend.bed_here(player)`). Per-player **gameplay** state
+(flags, timers, counters, coords) is now per-player and server-authoritative. The remaining statics
+are the **audio/visual** half (sound/shader/overlay flags, the eyes/oh_no-frame overlays, the chat
+typing) and the `information` targeting singleton — both deferred to Phase 3/4 as planned.
+- [x] Inventory the `public static` per-player fields (CLAUDE.md §2.2/§2.3).
+- [x] Storage: extended `"flywheel_of_terror"` NBT via the new `state` helper.
+- [x] Migrate core controllers:
+  - [x] `terror_beginning` (`his_hunt`, `near_house`, `away_house`, `far_away_house`,
+        `first_message_was`, `killed_victims`, `count_of_victims`, `house_builded_now`,
+        `tics_to_next_house`, … → NBT; cross-side sound flags left for Phase 3).
+  - [x] `terror_continue` (`need_try`, `near_maze`, `tics_cooldown` → NBT; `xxx/yyy/zzz` → locals
+        read from `lab_x/y/z`; cooldown now server-authoritative).
+  - [x] `terror_end.phase` → per-player (`terror_end.phase(player)`, NBT-backed).
+  - [x] `house_defend` (`breaked_for_last_seconds`, `bed_here`, `pos_of_bed` → NBT).
+  - [x] `paranoia` (`time_to_event`, `tics_without_events`, `para_sleep`, `tics_to_door`, break
+        `tics` → NBT; scheduler timers now server-authoritative; seeded on first login).
+  - [x] `health_decrease.max_hp` + `count_of_kills` → per-player NBT (`maxhp` / `kills`).
+- [x] Migrate every event class's gameplay `event_in_process` / timer statics to per-player NBT via
+      `<class>.set_active(player, …)` + NBT keys (tool_break, forge_revenge, notice_in_inventory,
+      angel_sound_event, circle_christ, periferia, thunder_behind, panic, fire_steps, below_event,
+      apocalypsis_event, exist_terror_event, labyrinth_event, all_look_at_you, remove_entities,
+      fake_darknet_access, paralysis_event, advanced_baron_detector, decline_run, something_wrong,
+      independence (target via UUID), oh_no_stalker (computes tree per nearest player)).
+      Pure-A/V `event_in_process` (sound_heart, sound_knife_attack) left static for Phase 3.
+- [~] Scope world mutations per-player where feasible — terror_continue cooldown made
+      server-authoritative; `serv.setDayTime`/`setWeatherParameters` in `terror_beginning` /
+      `apocalypsis_event` still mutate global world state (inherent to those events; revisit if needed).
+
+### Side fixes done alongside Phase 2
+- [x] `fake_main_menu`: added a "hunt" multiplayer button → `JoinMultiplayerScreen`, guarded by the
+      same `getMultiplayerDisabledReason()` (parental-controls / ban) check vanilla uses; the class is
+      already a `Dist.CLIENT`-guarded `@EventBusSubscriber(value = {Dist.CLIENT})` `Screen`.
 
 ## Phase 3 — Client/server networking layer
 - [ ] Add a `SimpleChannel` with versioned S2C and C2S packets.

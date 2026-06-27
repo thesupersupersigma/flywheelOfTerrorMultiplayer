@@ -14,13 +14,16 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class notice_in_inventory {
-   public static boolean event_in_process = false;
    public static Random random = new Random();
+
+   public static void set_active(Player player, boolean value) {
+      state.putBool(player, "notice_in_inventory_active", value);
+   }
 
    @SubscribeEvent
    public static void every(PlayerTickEvent event) {
       Player player = event.player;
-      if (event_in_process && !player.level().isClientSide()) {
+      if (state.getBool(player, "notice_in_inventory_active") && !player.level().isClientSide()) {
          CompoundTag global_tag = player.getPersistentData();
          CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
          ItemStack bebra = new ItemStack((ItemLike)add_items.notice.get());
@@ -39,7 +42,7 @@ public class notice_in_inventory {
 
          bebra.setHoverName(Component.literal(info.get(random.nextInt(0, info.size()))));
          player.getInventory().setItem(15, bebra);
-         event_in_process = false;
+         state.putBool(player, "notice_in_inventory_active", false);
       }
    }
 }

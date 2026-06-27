@@ -2,11 +2,14 @@ package com.example.flywheel_of_terror;
 
 import com.example.flywheel_of_terror.client.client_safe;
 import java.util.Random;
+import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.commands.arguments.EntityAnchorArgument.Anchor;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
@@ -21,15 +24,14 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class independence {
-   public static LivingEntity current_target;
-   public static int tics_of_hunt = 0;
+   // Per-player "possession hunt": timer + target UUID → NBT ("indep_tics" / "indep_target").
    public static Random random = new Random();
 
    public static void start(Player player, int tics) {
       LivingEntity mob = get_nearest_living_entity(player, 20.0F);
       if (mob != null) {
-         tics_of_hunt = tics;
-         current_target = mob;
+         state.putInt(player, "indep_tics", tics);
+         state.putString(player, "indep_target", mob.getUUID().toString());
       }
    }
 
@@ -63,10 +65,10 @@ public class independence {
          );
       player.teleportTo(x, y, z);
       if (player.distanceTo(target) < 1.5F) {
-         LivingEntity attackTarget = current_target;
+         LivingEntity attackTarget = target;
          DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> client_safe.independenceAttack(player, attackTarget));
          target.hurt(player.damageSources().playerAttack(player), 2000.0F);
-         tics_of_hunt = 0;
+         state.putInt(player, "indep_tics", 0);
          player.swing(InteractionHand.MAIN_HAND);
          player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.PLAYERS, 1.0F, 1.0F);
       }
@@ -91,17 +93,20 @@ public class independence {
    public static void tickevente(PlayerTickEvent event) {
       Player player = event.player;
       boolean client = player.level().isClientSide();
-      if (tics_of_hunt > 0 && event.phase != Phase.END && !client) {
-         tick_move_player_to_living_entity(player, current_target, 8.0F);
+      if (!client && event.phase != Phase.END) {
+         int tics_of_hunt = state.getInt(player, "indep_tics");
+         if (tics_of_hunt > 0 && player.level() instanceof ServerLevel serv) {
+            Entity target = serv.getEntity(UUID.fromString(state.getString(player, "indep_target")));
+            if (target instanceof LivingEntity living && living.isAlive()) {
+               tick_move_player_to_living_entity(player, living, 8.0F);
+            }
+         }
+
+         state.putInt(player, "indep_tics", tics_of_hunt - 1);
       }
 
-      if (!client && player.tickCount % 40 == 0 && random.nextInt(1, 1001) == 200 && player_on_surface(player) && !terror_beginning.near_house) {
+      if (!client && player.tickCount % 40 == 0 && random.nextInt(1, 1001) == 200 && player_on_surface(player) && !terror_beginning.near_house(player)) {
          start(player, 300);
       }
-   }
-
-   @SubscribeEvent
-   public static void serv(ServerTickEvent event) {
-      tics_of_hunt--;
    }
 }

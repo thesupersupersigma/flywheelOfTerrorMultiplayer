@@ -18,24 +18,29 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
    bus = Bus.FORGE
 )
 public class tool_break {
-   public static boolean event_in_process = false;
+   // event_in_process is per-player gameplay (NBT "tool_break_active"); sound_must_be stays a
+   // static cross-side A/V flag (Phase 3).
    public static boolean sound_must_be = false;
-   public static int to_reload_event = 0;
+
+   public static void set_active(Player player, boolean value) {
+      state.putBool(player, "tool_break_active", value);
+   }
 
    @SubscribeEvent
    public static void checkarm(PlayerTickEvent event) {
       Player player = event.player;
-      if (player.tickCount % 80 == 0) {
-         to_reload_event--;
-      }
-
       if (player.level().isClientSide() && sound_must_be) {
          player.playSound(SoundEvents.ITEM_BREAK, 10.0F, 1.0F);
          sound_must_be = false;
       }
 
       if (!player.level().isClientSide()) {
-         if (event_in_process && to_reload_event <= 0) {
+         int to_reload_event = state.getInt(player, "tool_break_reload");
+         if (player.tickCount % 80 == 0) {
+            to_reload_event--;
+         }
+
+         if (state.getBool(player, "tool_break_active") && to_reload_event <= 0) {
             to_reload_event = 20;
             if (player.getMainHandItem().getItem() instanceof PickaxeItem
                || player.getMainHandItem().getItem() instanceof AxeItem
@@ -43,10 +48,12 @@ public class tool_break {
                || player.getMainHandItem().getItem() instanceof HoeItem) {
                System.out.println("must be break");
                player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-               event_in_process = false;
+               state.putBool(player, "tool_break_active", false);
                sound_must_be = true;
             }
          }
+
+         state.putInt(player, "tool_break_reload", to_reload_event);
       }
    }
 }

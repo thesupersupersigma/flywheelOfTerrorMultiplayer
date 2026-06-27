@@ -14,8 +14,7 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class fake_darknet_access {
-   public static int tics_to_error = 0;
-
+   // tics_to_error → per-player NBT ("darknet_tics").
    public static void set_wait_situation(Player player, boolean state) {
       CompoundTag global_tag = player.getPersistentData();
       CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
@@ -31,7 +30,7 @@ public class fake_darknet_access {
 
    public static void do_event(Player player) {
       DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> client_safe.darknetScreenshot());
-      tics_to_error = 200;
+      state.putInt(player, "darknet_tics", 200);
       CompoundTag global_tag = player.getPersistentData();
       CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
       tag.putInt("fake_darknet_access", 1);
@@ -42,14 +41,15 @@ public class fake_darknet_access {
       Player player = event.player;
       boolean client = player.level().isClientSide();
       if (!client && event.phase == Phase.START) {
-         tics_to_error--;
+         int tics_to_error = state.getInt(player, "darknet_tics") - 1;
+         state.putInt(player, "darknet_tics", tics_to_error);
          System.out.println(tics_to_error);
-      }
 
-      if (tics_to_error == 1 && !client) {
-         String text = "§caccess to http://flywheel_of_terror/" + information.get_name_of_the_player(player) + "/evidence.onion failed after 40 retries";
-         player.sendSystemMessage(Component.literal(text));
-         tics_to_error = -100;
+         if (tics_to_error == 1) {
+            String text = "§caccess to http://flywheel_of_terror/" + information.get_name_of_the_player(player) + "/evidence.onion failed after 40 retries";
+            player.sendSystemMessage(Component.literal(text));
+            state.putInt(player, "darknet_tics", -100);
+         }
       }
    }
 

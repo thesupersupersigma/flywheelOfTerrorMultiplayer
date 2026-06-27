@@ -9,12 +9,14 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class forge_revenge {
-   public static boolean event_in_process = false;
+   public static void set_active(Player player, boolean value) {
+      state.putBool(player, "forge_revenge_active", value);
+   }
 
    @SubscribeEvent
    public static void time(PlayerTickEvent event) {
       Player player = event.player;
-      if (event_in_process) {
+      if (!player.level().isClientSide() && state.getBool(player, "forge_revenge_active")) {
          double myX = player.getX();
          double myY = player.getY();
          double myZ = player.getZ();
@@ -38,7 +40,7 @@ public class forge_revenge {
          player.level().setBlock(new BlockPos((int)myX - 1, (int)myY + 3, (int)myZ - 1), Blocks.AIR.defaultBlockState(), 3);
          player.level().setBlock(new BlockPos((int)myX - 1, (int)myY + 2, (int)myZ - 1), Blocks.AIR.defaultBlockState(), 3);
          player.level().setBlock(new BlockPos((int)myX - 1, (int)myY + 1, (int)myZ - 1), Blocks.AIR.defaultBlockState(), 3);
-         event_in_process = false;
+         state.putBool(player, "forge_revenge_active", false);
       }
    }
 }

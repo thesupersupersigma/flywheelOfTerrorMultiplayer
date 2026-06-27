@@ -1,6 +1,6 @@
 package com.example.flywheel_of_terror.client;
 
-import com.example.flywheel_of_terror.all_look_at_you;
+import com.example.flywheel_of_terror.state;
 import net.minecraft.client.Camera;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
@@ -31,7 +31,8 @@ public final class client_safe {
 
    /** game_rules.every: force first person + cap render distance. */
    public static void gameRulesCameraTick() {
-      if (all_look_at_you.tics_of_looking <= 0) {
+      Player local = Minecraft.getInstance().player;
+      if (local == null || state.getInt(local, "tics_of_looking") <= 0) {
          Minecraft.getInstance().options.setCameraType(CameraType.FIRST_PERSON);
       }
 

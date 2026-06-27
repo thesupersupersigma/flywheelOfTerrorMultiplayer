@@ -23,11 +23,17 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class apocalypsis_event {
-   public static boolean event_in_process = false;
+   // event_in_process and the server-side gameplay timer move to per-player NBT ("apoc_active" /
+   // "apoc_tics"). tics_of_event + red_intense + sound_must_be stay static for the client shader/
+   // sound (Phase 3).
    public static int tics_of_event = -2;
    public static boolean sound_must_be = false;
    public static Random random = new Random();
    public static float red_intense = 0.0F;
+
+   public static void set_active(Player player, boolean value) {
+      state.putBool(player, "apoc_active", value);
+   }
 
    @EventBusSubscriber(value = {Dist.CLIENT})
    public static class client_events {
@@ -52,7 +58,7 @@ public class apocalypsis_event {
          sound_must_be = false;
       }
 
-      if (event_in_process && !player.level().isClientSide() && player.getY() > 60.0) {
+      if (state.getBool(player, "apoc_active") && !player.level().isClientSide() && player.getY() > 60.0) {
          tag.putBoolean("apoc", true);
          global_tag.put("flywheel_of_terror", tag);
          red_intense = 0.5F;
@@ -62,15 +68,17 @@ public class apocalypsis_event {
             serv.setWeatherParameters(0, 360, true, true);
          }
 
-         event_in_process = false;
+         state.putBool(player, "apoc_active", false);
          tics_of_event = 860;
+         state.putInt(player, "apoc_tics", 860);
       }
 
       if (player.level().isClientSide()) {
          tics_of_event--;
       }
 
-      if (tics_of_event > 0 && !player.level().isClientSide()) {
+      int apoc_tics = state.getInt(player, "apoc_tics");
+      if (apoc_tics > 0 && !player.level().isClientSide()) {
          boolean bottom_of_tree_finded = false;
          BlockPos bottom_pos = new BlockPos(1, 1, 1);
 
@@ -118,7 +126,7 @@ public class apocalypsis_event {
             }
          }
 
-         if (tics_of_event % 20 == 0) {
+         if (apoc_tics % 20 == 0) {
             double x = player.getLookAngle().x;
             double zxx = player.getLookAngle().z;
             double xx = x * (double)random.nextInt(-12, -5);
@@ -131,6 +139,8 @@ public class apocalypsis_event {
             copy.setPos(pos);
             player.level().addFreshEntity(copy);
          }
+
+         state.putInt(player, "apoc_tics", apoc_tics - 1);
       }
    }
 }

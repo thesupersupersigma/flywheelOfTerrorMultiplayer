@@ -31,11 +31,16 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class labyrinth_event {
-   public static boolean event_in_process = false;
-   public static int tics_to_reload_music = 0;
+   // Per-player labyrinth state → NBT ("labyrinth_active", "lab_music_tics", "in_lab", "lab_state").
    public static Random random = new Random();
-   public static boolean in_lab = false;
-   public static int state = 0;
+
+   public static boolean in_lab(Player player) {
+      return state.getBool(player, "in_lab");
+   }
+
+   public static void set_active(Player player, boolean value) {
+      state.putBool(player, "labyrinth_active", value);
+   }
 
    public static void build(ServerLevel serv, BlockPos pos, String name) {
       InputStream stream = labyrinth_event.class.getResourceAsStream("/data/flywheel_of_terror/structures/" + name + ".nbt");
@@ -82,12 +87,17 @@ public class labyrinth_event {
       if (!player.level().isClientSide) {
          CompoundTag global_tag = player.getPersistentData();
          CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
-         if (!tag.getBoolean("laby_builded") && event_in_process) {
+         int tics_to_reload_music = tag.getInt("lab_music_tics");
+         if (!tag.getBoolean("laby_builded") && tag.getBoolean("labyrinth_active")) {
             tag.putBoolean("laby_builded", true);
 
-            for (double x = (double)(terror_continue.xxx - 20); x <= (double)(terror_continue.xxx + 20); x++) {
-               for (double y = (double)(terror_continue.yyy - 1); y <= (double)(terror_continue.yyy + 2); y++) {
-                  for (double z = (double)(terror_continue.zzz - 20); z <= (double)(terror_continue.zzz + 20); z++) {
+            int lab_x = tag.getInt("lab_x");
+            int lab_y = tag.getInt("lab_y");
+            int lab_z = tag.getInt("lab_z");
+
+            for (double x = (double)(lab_x - 20); x <= (double)(lab_x + 20); x++) {
+               for (double y = (double)(lab_y - 1); y <= (double)(lab_y + 2); y++) {
+                  for (double z = (double)(lab_z - 20); z <= (double)(lab_z + 20); z++) {
                      String coordinates = (int)x + "," + (int)y + "," + (int)z;
                      BlockPos pos = new BlockPos((int)x, (int)y, (int)z);
                      if (!(player.level().getBlockState(pos).getBlock() instanceof ChestBlock)) {
@@ -112,8 +122,8 @@ public class labyrinth_event {
          }
 
          if (labyblock) {
-            state = 1;
-            in_lab = true;
+            tag.putInt("lab_state", 1);
+            tag.putBoolean("in_lab", true);
             MobEffectInstance blind = new MobEffectInstance(MobEffects.BLINDNESS, 50, 10, false, true, false);
             player.addEffect(blind);
             if (tics_to_reload_music <= 0) {
@@ -210,9 +220,9 @@ public class labyrinth_event {
             }
          }
 
-         if (state == 1 && !labyblock) {
-            state = 0;
-            in_lab = false;
+         if (tag.getInt("lab_state") == 1 && !labyblock) {
+            tag.putInt("lab_state", 0);
+            tag.putBoolean("in_lab", false);
             player.removeEffect(MobEffects.BLINDNESS);
             ClientboundStopSoundPacket packet = new ClientboundStopSoundPacket(null, null);
             if (player instanceof ServerPlayer serv) {
@@ -221,6 +231,9 @@ public class labyrinth_event {
 
             tics_to_reload_music = 0;
          }
+
+         tag.putInt("lab_music_tics", tics_to_reload_music);
+         global_tag.put("flywheel_of_terror", tag);
 
          for (double x = player.getX() - 3.0; x <= player.getX() + 3.0; x++) {
             for (double y = player.getY() - 1.0; y <= player.getY(); y++) {

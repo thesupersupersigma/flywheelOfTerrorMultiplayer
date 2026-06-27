@@ -55,14 +55,19 @@ public class oh_no extends PathfinderMob {
             this.speed += 0.2;
          }
 
-         if (!terror_beginning.his_hunt) {
-            this.remove(RemovalReason.DISCARDED);
-         }
+         boolean anyHunt = false;
 
          for (Player player : this.level().getEntitiesOfClass(Player.class, this.getBoundingBox().inflate(400.0))) {
             this.getNavigation().moveTo(player, this.speed);
             this.setAggressive(true);
             this.setTarget(player);
+            if (terror_beginning.his_hunt(player)) {
+               anyHunt = true;
+            }
+         }
+
+         if (!anyHunt) {
+            this.remove(RemovalReason.DISCARDED);
          }
 
          for (oh_no copy : this.level().getEntitiesOfClass(oh_no.class, this.getBoundingBox().inflate(100.0))) {
@@ -81,7 +86,7 @@ public class oh_no extends PathfinderMob {
    public static void kill_player(LivingDeathEvent event) {
       if (event.getSource().getEntity() instanceof oh_no he && event.getEntity() instanceof Player player) {
          he.remove(RemovalReason.DISCARDED);
-         terror_beginning.his_hunt = false;
+         terror_beginning.set_his_hunt(player, false);
          ClientboundStopSoundPacket packet = new ClientboundStopSoundPacket(null, null);
          if (player instanceof ServerPlayer serv) {
             serv.connection.send(packet);

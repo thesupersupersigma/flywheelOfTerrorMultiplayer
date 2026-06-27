@@ -18,7 +18,7 @@ public class alwaysknife {
       if (!player.level().isClientSide()) {
          CompoundTag global_tag = player.getPersistentData();
          CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
-         if (!terror_beginning.his_hunt && terror_end.phase == 0) {
+         if (!terror_beginning.his_hunt(player) && terror_end.phase(player) == 0) {
             player.getInventory().setItem(0, new ItemStack((ItemLike)add_items.my_knife.get()));
          } else if (player.getMainHandItem().getItem() == add_items.my_knife.get()) {
             player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);

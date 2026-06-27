@@ -14,32 +14,37 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber
 public class health_decrease {
-   public static float max_hp = 20.0F;
-   public static int count_of_kills = 0;
+   // Per-player state now lives in each player's "flywheel_of_terror" NBT compound
+   // ("maxhp" / "kills"); these helpers replace the old shared static fields.
+   private static CompoundTag fot(Player player) {
+      return player.getPersistentData().getCompound("flywheel_of_terror");
+   }
+
+   private static void save(Player player, CompoundTag tag) {
+      player.getPersistentData().put("flywheel_of_terror", tag);
+   }
+
+   private static float maxHp(Player player) {
+      return fot(player).getFloat("maxhp");
+   }
 
    @SubscribeEvent
    public static void whenentry(PlayerLoggedInEvent event) {
       Player player = event.getEntity();
-      CompoundTag global_tag = player.getPersistentData();
-      CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
+      CompoundTag tag = fot(player);
       if (tag.getFloat("maxhp") == 0.0F) {
          tag.putFloat("maxhp", 20.0F);
          tag.putInt("kills", 0);
+         save(player, tag);
       }
 
-      max_hp = tag.getFloat("maxhp");
-      count_of_kills = tag.getInt("kills");
-      event.getEntity().getAttribute(Attributes.MAX_HEALTH).setBaseValue((double)max_hp);
+      player.getAttribute(Attributes.MAX_HEALTH).setBaseValue((double)tag.getFloat("maxhp"));
    }
 
    @SubscribeEvent
    public static void saveall(PlayerTickEvent event) {
       Player player = event.player;
-      CompoundTag global_tag = player.getPersistentData();
-      CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
-      tag.putInt("kills", count_of_kills);
-      tag.putFloat("maxhp", max_hp);
-      global_tag.put("flywheel_of_terror", tag);
+      float max_hp = maxHp(player);
       MobEffectInstance strenght1 = new MobEffectInstance(MobEffects.DAMAGE_BOOST, 1, 0, false, true, false);
       MobEffectInstance strenght2 = new MobEffectInstance(MobEffects.DAMAGE_BOOST, 1, 1, false, true, false);
       MobEffectInstance strenght3 = new MobEffectInstance(MobEffects.DAMAGE_BOOST, 1, 2, false, true, false);
@@ -90,23 +95,28 @@ public class health_decrease {
 
    @SubscribeEvent
    public static void setnewhp(PlayerRespawnEvent event) {
-      event.getEntity().getAttribute(Attributes.MAX_HEALTH).setBaseValue((double)max_hp);
+      Player player = event.getEntity();
+      player.getAttribute(Attributes.MAX_HEALTH).setBaseValue((double)maxHp(player));
    }
 
    @SubscribeEvent
    public static void whendie(LivingDeathEvent event) {
-      CompoundTag global_tag = event.getEntity().getPersistentData();
-      CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
-      if (event.getEntity() instanceof Player player && max_hp >= 4.0F && tag.getInt("state_of_lore") == 0) {
-         max_hp -= 2.0F;
+      if (event.getEntity() instanceof Player player) {
+         CompoundTag tag = fot(player);
+         float max_hp = tag.getFloat("maxhp");
+         if (max_hp >= 4.0F && tag.getInt("state_of_lore") == 0) {
+            tag.putFloat("maxhp", max_hp - 2.0F);
+            save(player, tag);
+         }
       }
    }
 
    @SubscribeEvent
    public static void health_increase(LivingDeathEvent event) {
       if (event.getSource().getEntity() instanceof Player player) {
-         CompoundTag global_tag = player.getPersistentData();
-         CompoundTag tag = global_tag.getCompound("flywheel_of_terror");
+         CompoundTag tag = fot(player);
+         float max_hp = tag.getFloat("maxhp");
+         int count_of_kills = tag.getInt("kills");
          if (player.getMaxHealth() < 20.0F) {
             count_of_kills++;
          }
@@ -116,6 +126,10 @@ public class health_decrease {
             max_hp += 2.0F;
             player.getAttribute(Attributes.MAX_HEALTH).setBaseValue((double)max_hp);
          }
+
+         tag.putInt("kills", count_of_kills);
+         tag.putFloat("maxhp", max_hp);
+         save(player, tag);
       }
    }
 }

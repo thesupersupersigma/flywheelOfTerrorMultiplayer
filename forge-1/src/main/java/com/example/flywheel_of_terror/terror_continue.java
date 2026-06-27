@@ -33,15 +33,15 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
    bus = Bus.FORGE
 )
 public class terror_continue {
-   public static boolean need_try = false;
+   // Phase 2: per-player state ("need_try", "near_maze", "tics_cooldown") now lives in the player's
+   // NBT compound. The two sound flags stay static (cross-side A/V, deferred to Phase 3).
    public static Random random = new Random();
    public static boolean sound_must_be = false;
-   public static boolean near_maze = false;
-   public static int tics_cooldown = 4000;
-   public static int xxx;
-   public static int yyy;
-   public static int zzz;
    public static boolean sound_chest_must_be = false;
+
+   public static boolean near_maze(Player player) {
+      return state.getBool(player, "near_maze");
+   }
 
    public static void spawn_your_legacy(Player player) {
       CompoundTag global_tag = player.getPersistentData();
@@ -72,9 +72,9 @@ public class terror_continue {
                      ChestBlockEntity ches2 = (ChestBlockEntity)ches;
                      double xx = player.getX() + (double)random.nextInt(100, 300);
                      double zz = player.getZ() + (double)random.nextInt(-100, 300);
-                     xxx = (int)xx;
-                     zzz = (int)zz;
-                     yyy = (int)(player.getY() + 40.0);
+                     int xxx = (int)xx;
+                     int zzz = (int)zz;
+                     int yyy = (int)(player.getY() + 40.0);
                      boolean chest_empty = true;
                      ItemStack zap = new ItemStack((ItemLike)add_items.notice.get());
                      zap.setHoverName(Component.literal("your items " + (int)xx + " " + (int)(player.getY() + 40.0) + " " + (int)zz));
@@ -115,7 +115,7 @@ public class terror_continue {
                         }
                      }
 
-                     labyrinth_event.event_in_process = true;
+                     labyrinth_event.set_active(player, true);
                   }
                }
             }
@@ -239,13 +239,18 @@ public class terror_continue {
          sound_must_be = false;
       }
 
-      if (player.level().isClientSide() && terror_beginning.away_house) {
-         tics_cooldown--;
+      // Cooldown is now server-authoritative (was decremented client-side via a shared static).
+      if (!client && terror_beginning.away_house(player)) {
+         tag.putInt("tics_cooldown", tag.getInt("tics_cooldown") - 1);
       }
 
-      if (!terror_beginning.away_house && need_try && tag.getBoolean("builded") && !player.level().isClientSide() && tics_cooldown <= 0) {
-         tics_cooldown = 8000;
-         need_try = false;
+      if (!terror_beginning.away_house(player)
+         && tag.getBoolean("need_try")
+         && tag.getBoolean("builded")
+         && !player.level().isClientSide()
+         && tag.getInt("tics_cooldown") <= 0) {
+         tag.putInt("tics_cooldown", 8000);
+         tag.putBoolean("need_try", false);
          int event_number = random.nextInt(1, 11);
          if (event_number == 1 && !tag.getBoolean("plita")) {
             place_plita(player);
@@ -265,8 +270,8 @@ public class terror_continue {
       }
 
       if (!client) {
-         if (terror_beginning.away_house && player.tickCount % 100 == 0 && tics_cooldown <= 0) {
-            need_try = true;
+         if (terror_beginning.away_house(player) && player.tickCount % 100 == 0 && tag.getInt("tics_cooldown") <= 0) {
+            tag.putBoolean("need_try", true);
          }
 
          int x = tag.getInt("lab_x");
@@ -275,10 +280,12 @@ public class terror_continue {
             && (double)(x + 40) > player.getX()
             && (double)(z - 40) < player.getX()
             && (double)(z + 40) > player.getX()) {
-            near_maze = true;
+            tag.putBoolean("near_maze", true);
          } else {
-            near_maze = false;
+            tag.putBoolean("near_maze", false);
          }
+
+         global_tag.put("flywheel_of_terror", tag);
       }
    }
 }
